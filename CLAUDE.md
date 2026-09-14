@@ -99,7 +99,7 @@ The server requires:
 
 Releases are fully automated by the CD workflow (`.github/workflows/cd.yml`), which triggers on any pushed tag matching `v*`. **The only manual step is creating the tag and a matching GitHub release** — the agent that merges a release-worthy PR should do this directly once the PR is merged.
 
-**Do NOT bump the version numbers yourself.** CD owns the version bump: on tag push it runs `npm run version:update`, updates the version in every version-bearing file (`package.json`, `src/config/server-config.ts`, `manifest.json`, `CITATION.cff`, `README.md`, `gemini-extension.json`, and the Helm chart), commits `Bump version to <x.y.z>` to `main`, then builds and publishes to npm, GHCR/Helm, and Docker Hub, and uploads the release assets. Editing those files by hand collides with that step and breaks the release. Leave the source at the previous version.
+**Do NOT bump the version numbers yourself.** CD owns the version bump: on tag push it runs `npm run version:update`, updates the version in every version-bearing file (`package.json`, `src/config/server-config.ts`, `manifest.json`, `CITATION.cff`, `README.md`, `gemini-extension.json`), commits `Bump version to <x.y.z>` to `main`, then builds and publishes to npm and Docker Hub, and uploads the release assets. Editing those files by hand collides with that step and breaks the release. Leave the source at the previous version.
 
 To cut a release, after the PR is merged to `main`:
 
