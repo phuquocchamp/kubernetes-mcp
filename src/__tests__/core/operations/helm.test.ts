@@ -1,6 +1,10 @@
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { installHelmChart, uninstallHelmChart, upgradeHelmChart } from "../../../core/operations/helm.js";
+import {
+  installHelmChart,
+  uninstallHelmChart,
+  upgradeHelmChart,
+} from "../../../core/operations/helm.js";
 import type { Deps } from "../../../core/types.js";
 
 function fakeDeps(): Deps {
@@ -65,7 +69,12 @@ describe("installHelmChart", () => {
       "install_helm_chart",
       expect.any(Object),
     );
-    expect(deps.helm).toHaveBeenNthCalledWith(2, ["repo", "update"], "install_helm_chart", expect.any(Object));
+    expect(deps.helm).toHaveBeenNthCalledWith(
+      2,
+      ["repo", "update"],
+      "install_helm_chart",
+      expect.any(Object),
+    );
     expect(deps.helm).toHaveBeenNthCalledWith(
       3,
       ["install", "my-release", "bitnami/nginx", "--namespace", "web", "--create-namespace"],
@@ -84,7 +93,11 @@ describe("installHelmChart", () => {
       useTemplate: true,
     });
 
-    expect(deps.kubectl).toHaveBeenNthCalledWith(1, ["create", "namespace", "web"], "install_helm_chart");
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      1,
+      ["create", "namespace", "web"],
+      "install_helm_chart",
+    );
     expect(deps.helm).toHaveBeenCalledWith(
       ["template", "my-release", "./charts/mychart", "--namespace", "web"],
       "install_helm_chart",
@@ -97,12 +110,17 @@ describe("installHelmChart", () => {
     );
     expect(result.status).toBe("installed");
     expect(result.steps).toEqual(
-      expect.arrayContaining(["Generating YAML using helm template", "Applying YAML using kubectl"]),
+      expect.arrayContaining([
+        "Generating YAML using helm template",
+        "Applying YAML using kubectl",
+      ]),
     );
   });
 
   test("template mode tolerates namespace already existing", async () => {
-    (deps.kubectl as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("namespaces \"web\" already exists"));
+    (deps.kubectl as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('namespaces "web" already exists'),
+    );
 
     const result = await installHelmChart(deps, {
       name: "my-release",
@@ -112,7 +130,9 @@ describe("installHelmChart", () => {
     });
 
     expect(result.status).toBe("installed");
-    expect(result.steps).toEqual(expect.arrayContaining(["Namespace web already exists or could not be created"]));
+    expect(result.steps).toEqual(
+      expect.arrayContaining(["Namespace web already exists or could not be created"]),
+    );
   });
 
   test("rejects a flag-shaped release name before spawning helm", async () => {
@@ -135,7 +155,12 @@ describe("installHelmChart", () => {
       installHelmChart(deps, { name: "my-release", chart: "bitnami/nginx", namespace: "--evil" }),
     ).rejects.toThrow(/namespace/);
     await expect(
-      installHelmChart(deps, { name: "my-release", chart: "bitnami/nginx", namespace: "web", repo: "--evil" }),
+      installHelmChart(deps, {
+        name: "my-release",
+        chart: "bitnami/nginx",
+        namespace: "web",
+        repo: "--evil",
+      }),
     ).rejects.toThrow(/repo/);
   });
 });
@@ -156,7 +181,15 @@ describe("upgradeHelmChart", () => {
     });
 
     expect(deps.helm).toHaveBeenCalledWith(
-      ["upgrade", "my-release", "bitnami/nginx", "--namespace", "web", "-f", "/home/user/values.yaml"],
+      [
+        "upgrade",
+        "my-release",
+        "bitnami/nginx",
+        "--namespace",
+        "web",
+        "-f",
+        "/home/user/values.yaml",
+      ],
       "upgrade_helm_chart",
       expect.any(Object),
     );
@@ -196,8 +229,12 @@ describe("uninstallHelmChart", () => {
   });
 
   test("rejects a flag-shaped release name or namespace", async () => {
-    await expect(uninstallHelmChart(deps, { name: "--evil", namespace: "web" })).rejects.toThrow(McpError);
-    await expect(uninstallHelmChart(deps, { name: "my-release", namespace: "--evil" })).rejects.toThrow(McpError);
+    await expect(uninstallHelmChart(deps, { name: "--evil", namespace: "web" })).rejects.toThrow(
+      McpError,
+    );
+    await expect(
+      uninstallHelmChart(deps, { name: "my-release", namespace: "--evil" }),
+    ).rejects.toThrow(McpError);
     expect(deps.helm).not.toHaveBeenCalled();
   });
 });

@@ -21,7 +21,10 @@ describe("get operation", () => {
 
     await get(deps, { resourceType: "pods" });
 
-    expect(kubectl).toHaveBeenCalledWith(["get", "pods", "-n", "default", "-o", "json"], "kubectl_get");
+    expect(kubectl).toHaveBeenCalledWith(
+      ["get", "pods", "-n", "default", "-o", "json"],
+      "kubectl_get",
+    );
   });
 
   test("builds argv for a named resource with namespace, output and context", async () => {
@@ -46,7 +49,10 @@ describe("get operation", () => {
 
     await get(deps, { resourceType: "pods", allNamespaces: true });
 
-    expect(kubectl).toHaveBeenCalledWith(["get", "pods", "--all-namespaces", "-o", "json"], "kubectl_get");
+    expect(kubectl).toHaveBeenCalledWith(
+      ["get", "pods", "--all-namespaces", "-o", "json"],
+      "kubectl_get",
+    );
   });
 
   test("skips -n for a non-namespaced resource type", async () => {
@@ -89,7 +95,17 @@ describe("get operation", () => {
     });
 
     expect(kubectl).toHaveBeenCalledWith(
-      ["get", "pods", "-n", "default", "-l", "app=nginx", "--field-selector=metadata.name=my-pod", "-o", "json"],
+      [
+        "get",
+        "pods",
+        "-n",
+        "default",
+        "-l",
+        "app=nginx",
+        "--field-selector=metadata.name=my-pod",
+        "-o",
+        "json",
+      ],
       "kubectl_get",
     );
   });
@@ -97,14 +113,18 @@ describe("get operation", () => {
   test("rejects a flag-like resourceType", async () => {
     const { deps, kubectl } = fakeDeps();
 
-    await expect(get(deps, { resourceType: "--server=https://evil.example.com" })).rejects.toThrow(McpError);
+    await expect(get(deps, { resourceType: "--server=https://evil.example.com" })).rejects.toThrow(
+      McpError,
+    );
     expect(kubectl).not.toHaveBeenCalled();
   });
 
   test("rejects a flag-like name", async () => {
     const { deps, kubectl } = fakeDeps();
 
-    await expect(get(deps, { resourceType: "pods", name: "--kubeconfig=/tmp/evil" })).rejects.toThrow(McpError);
+    await expect(
+      get(deps, { resourceType: "pods", name: "--kubeconfig=/tmp/evil" }),
+    ).rejects.toThrow(McpError);
     expect(kubectl).not.toHaveBeenCalled();
   });
 });

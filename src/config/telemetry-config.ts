@@ -1,10 +1,10 @@
-import { NodeSDK, resources } from "@opentelemetry/sdk-node";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
+import { NodeSDK, resources } from "@opentelemetry/sdk-node";
 import {
   SEMRESATTRS_SERVICE_NAME,
   SEMRESATTRS_SERVICE_VERSION,
 } from "@opentelemetry/semantic-conventions";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { serverConfig } from "./server-config.js";
 
 /**
@@ -122,7 +122,7 @@ export function initializeTelemetry(): NodeSDK | null {
   }
 
   console.error(
-    `Initializing OpenTelemetry: endpoint=${config.endpoint}, service=${config.serviceName}`
+    `Initializing OpenTelemetry: endpoint=${config.endpoint}, service=${config.serviceName}`,
   );
 
   // Create OTLP trace exporter
@@ -191,7 +191,9 @@ export function getTelemetryConfigSummary(): string {
   ];
 
   if (config.sampler) {
-    parts.push(`Sampler: ${config.sampler.type}${config.sampler.arg !== undefined ? `(${config.sampler.arg})` : ""}`);
+    parts.push(
+      `Sampler: ${config.sampler.type}${config.sampler.arg !== undefined ? `(${config.sampler.arg})` : ""}`,
+    );
   }
 
   const attrCount = Object.keys(config.resourceAttributes).length;

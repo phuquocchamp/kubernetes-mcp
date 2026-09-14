@@ -5,8 +5,9 @@
  * `{ items: [...] }` for any other resource list, or the raw
  * (possibly secret-masked) kubectl output otherwise.
  */
-import { getResourceStatus } from "../operations/get.js";
+
 import type { GetResult } from "../operations/get.js";
+import { getResourceStatus } from "../operations/get.js";
 
 export function formatGet(result: GetResult): string {
   const { resourceType, output, raw, isListOperation } = result;

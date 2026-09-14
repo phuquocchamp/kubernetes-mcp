@@ -1,4 +1,8 @@
-import type { InstallHelmResult, UninstallHelmResult, UpgradeHelmResult } from "../operations/helm.js";
+import type {
+  InstallHelmResult,
+  UninstallHelmResult,
+  UpgradeHelmResult,
+} from "../operations/helm.js";
 
 export function formatInstallHelmChart(result: InstallHelmResult): string {
   return JSON.stringify(result);

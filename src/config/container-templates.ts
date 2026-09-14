@@ -1,14 +1,8 @@
-import { z } from "zod";
 import type { V1Container } from "@kubernetes/client-node";
+import { z } from "zod";
 
 // Container template types
-export const ContainerTemplate = z.enum([
-  "ubuntu",
-  "nginx",
-  "busybox",
-  "alpine",
-  "custom",
-]);
+export const ContainerTemplate = z.enum(["ubuntu", "nginx", "busybox", "alpine", "custom"]);
 
 export type ContainerTemplateName = z.infer<typeof ContainerTemplate>;
 
@@ -23,7 +17,7 @@ export const CustomContainerConfig = z.object({
         containerPort: z.number(),
         name: z.string().optional(),
         protocol: z.string().optional(),
-      })
+      }),
     )
     .optional(),
   resources: z
@@ -38,7 +32,7 @@ export const CustomContainerConfig = z.object({
         name: z.string(),
         value: z.string().optional(),
         valueFrom: z.any().optional(),
-      })
+      }),
     )
     .optional(),
   volumeMounts: z
@@ -47,7 +41,7 @@ export const CustomContainerConfig = z.object({
         name: z.string(),
         mountPath: z.string(),
         readOnly: z.boolean().optional(),
-      })
+      }),
     )
     .optional(),
 });

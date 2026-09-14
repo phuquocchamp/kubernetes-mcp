@@ -15,9 +15,13 @@ describe("execInPod", () => {
   test("builds argv with default namespace and default timeout", async () => {
     const deps = fakeDeps();
     await execInPod(deps, { name: "web", command: ["ls", "-la"] });
-    expect(deps.kubectl).toHaveBeenCalledWith(["exec", "web", "-n", "default", "--", "ls", "-la"], "exec_in_pod", {
-      timeoutMs: 60000,
-    });
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["exec", "web", "-n", "default", "--", "ls", "-la"],
+      "exec_in_pod",
+      {
+        timeoutMs: 60000,
+      },
+    );
   });
 
   test("adds container, context and custom timeout", async () => {
@@ -31,7 +35,19 @@ describe("execInPod", () => {
       command: ["cat", "/etc/hostname"],
     });
     expect(deps.kubectl).toHaveBeenCalledWith(
-      ["exec", "web", "-n", "kube-system", "-c", "app", "--context", "prod-ctx", "--", "cat", "/etc/hostname"],
+      [
+        "exec",
+        "web",
+        "-n",
+        "kube-system",
+        "-c",
+        "app",
+        "--context",
+        "prod-ctx",
+        "--",
+        "cat",
+        "/etc/hostname",
+      ],
       "exec_in_pod",
       { timeoutMs: 5000 },
     );
@@ -57,7 +73,9 @@ describe("execInPod", () => {
 
   test("rejects a non-array command before calling kubectl", async () => {
     const deps = fakeDeps();
-    await expect(execInPod(deps, { name: "web", command: "ls -la" as unknown as string[] })).rejects.toThrow();
+    await expect(
+      execInPod(deps, { name: "web", command: "ls -la" as unknown as string[] }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

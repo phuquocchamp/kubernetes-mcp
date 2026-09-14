@@ -11,7 +11,7 @@
  */
 export {
   assertNoDangerousFlags,
-  assertSafeArgv,
   assertNoRemoteFileReads,
   assertNotFlagLike,
+  assertSafeArgv,
 } from "../../security/kubectl-flags.js";

@@ -52,7 +52,13 @@ function parseContextsTable(raw: string): ContextEntry[] {
   const authInfoPos = headerLine.indexOf("AUTHINFO");
   const namespacePos = headerLine.indexOf("NAMESPACE");
 
-  if (currentPos === -1 || namePos === -1 || clusterPos === -1 || authInfoPos === -1 || namespacePos === -1) {
+  if (
+    currentPos === -1 ||
+    namePos === -1 ||
+    clusterPos === -1 ||
+    authInfoPos === -1 ||
+    namespacePos === -1
+  ) {
     throw new KubectlError("Invalid kubectl output format", "kubectl_context", "invalid_input");
   }
 
@@ -65,8 +71,11 @@ function parseContextsTable(raw: string): ContextEntry[] {
     const name = line.substring(namePos, clusterPos).trim();
     const cluster = line.substring(clusterPos, authInfoPos).trim();
     const authInfo =
-      namespacePos > 0 ? line.substring(authInfoPos, namespacePos).trim() : line.substring(authInfoPos).trim();
-    const namespace = namespacePos > 0 ? line.substring(namespacePos).trim() || "default" : "default";
+      namespacePos > 0
+        ? line.substring(authInfoPos, namespacePos).trim()
+        : line.substring(authInfoPos).trim();
+    const namespace =
+      namespacePos > 0 ? line.substring(namespacePos).trim() || "default" : "default";
 
     contexts.push({ name, cluster, user: authInfo, namespace, isCurrent });
   }
@@ -91,7 +100,9 @@ async function contextList(deps: Deps, args: ContextArgs): Promise<ContextResult
 
 async function contextGet(deps: Deps, args: ContextArgs): Promise<ContextResult> {
   const detailed = args.detailed === true;
-  const currentContext = (await deps.kubectl(["config", "current-context"], "kubectl_context", RUN_OPTS)).trim();
+  const currentContext = (
+    await deps.kubectl(["config", "current-context"], "kubectl_context", RUN_OPTS)
+  ).trim();
 
   if (!detailed) {
     return { kind: "get-simple", currentContext };
@@ -130,11 +141,19 @@ async function contextGet(deps: Deps, args: ContextArgs): Promise<ContextResult>
 async function contextSet(deps: Deps, args: ContextArgs): Promise<ContextResult> {
   const name = args.name;
   if (!name) {
-    throw new KubectlError("Name parameter is required for set operation", "kubectl_context", "invalid_input");
+    throw new KubectlError(
+      "Name parameter is required for set operation",
+      "kubectl_context",
+      "invalid_input",
+    );
   }
   assertNotFlagLike(name, "name");
 
-  const rawList = await deps.kubectl(["config", "get-contexts", "-o", "name"], "kubectl_context", RUN_OPTS);
+  const rawList = await deps.kubectl(
+    ["config", "get-contexts", "-o", "name"],
+    "kubectl_context",
+    RUN_OPTS,
+  );
   const availableContexts = rawList.trim().split("\n");
 
   // Extract the short name from the ARN if needed (e.g. EKS-style "cluster/<name>" contexts).
@@ -162,7 +181,11 @@ export async function kubectlContext(deps: Deps, args: ContextArgs): Promise<Con
     case "set":
       return contextSet(deps, args);
     default:
-      throw new KubectlError(`Invalid operation: ${args.operation}`, "kubectl_context", "invalid_input");
+      throw new KubectlError(
+        `Invalid operation: ${args.operation}`,
+        "kubectl_context",
+        "invalid_input",
+      );
   }
 }
 
@@ -178,5 +201,8 @@ export async function kubectlReconnect(deps: Deps): Promise<ReconnectResult> {
     );
   }
 
-  return { success: true, message: "API clients refreshed. DNS will be re-resolved on the next request." };
+  return {
+    success: true,
+    message: "API clients refreshed. DNS will be re-resolved on the next request.",
+  };
 }

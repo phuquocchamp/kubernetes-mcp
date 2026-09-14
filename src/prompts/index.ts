@@ -1,6 +1,9 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { KubernetesManager } from "../types.js";
-import { ListPromptsRequestSchema, GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import {
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import type { KubernetesManager } from "../types.js";
 
 export function registerPromptHandlers(server: Server, k8sManager: KubernetesManager) {
   // Register prompts list handler
@@ -20,7 +23,7 @@ export function registerPromptHandlers(server: Server, k8sManager: KubernetesMan
               name: "namespace",
               description: "Optional: Specify a namespace to narrow down the search.",
               required: false,
-              default: "all"
+              default: "all",
             },
           ],
         },

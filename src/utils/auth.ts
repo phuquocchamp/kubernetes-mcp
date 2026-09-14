@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "crypto";
-import { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /** Constant-time string comparison that prevents timing attacks (CWE-208). */
 function timingSafeCompare(a: string, b: string): boolean {

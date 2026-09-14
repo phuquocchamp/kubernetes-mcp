@@ -4,13 +4,20 @@ import { formatGet } from "../core/format/get.js";
 import { get } from "../core/operations/get.js";
 import type { Deps } from "../core/types.js";
 import { runTool } from "./result.js";
-import { contextSchema, fieldSelectorSchema, labelSelectorSchema, namespaceSchema, resourceTypeSchema } from "./schemas.js";
+import {
+  contextSchema,
+  fieldSelectorSchema,
+  labelSelectorSchema,
+  namespaceSchema,
+  resourceTypeSchema,
+} from "./schemas.js";
 
 export function registerGetTools(server: McpServer, deps: Deps): string[] {
   server.registerTool(
     "kubectl_get",
     {
-      description: "Get or list Kubernetes resources by resource type, name, and optionally namespace",
+      description:
+        "Get or list Kubernetes resources by resource type, name, and optionally namespace",
       annotations: {
         readOnlyHint: true,
       },
@@ -21,14 +28,20 @@ export function registerGetTools(server: McpServer, deps: Deps): string[] {
         name: z
           .string()
           .optional()
-          .describe("Name of the resource (optional - if not provided, lists all resources of the specified type)"),
+          .describe(
+            "Name of the resource (optional - if not provided, lists all resources of the specified type)",
+          ),
         namespace: namespaceSchema,
         output: z
           .enum(["json", "yaml", "wide", "name", "custom"])
           .optional()
           .default("json")
           .describe("Output format"),
-        allNamespaces: z.boolean().optional().default(false).describe("If true, list resources across all namespaces"),
+        allNamespaces: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("If true, list resources across all namespaces"),
         labelSelector: labelSelectorSchema,
         fieldSelector: fieldSelectorSchema,
         sortBy: z

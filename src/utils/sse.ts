@@ -1,11 +1,8 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import express from "express";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import express from "express";
+import { buildDefaultAllowedHosts, isAllInterfacesHost } from "./allowed-hosts.js";
 import { createAuthMiddleware, isAuthEnabled } from "./auth.js";
-import {
-  buildDefaultAllowedHosts,
-  isAllInterfacesHost,
-} from "./allowed-hosts.js";
 
 export function startSSEServer(server: Server) {
   const app = express();
@@ -14,8 +11,7 @@ export function startSSEServer(server: Server) {
   const authMiddleware = createAuthMiddleware();
 
   // DNS rebinding protection is enabled by default. Set DNS_REBINDING_PROTECTION=false to disable.
-  const enableDnsRebindingProtection =
-    process.env.DNS_REBINDING_PROTECTION !== "false";
+  const enableDnsRebindingProtection = process.env.DNS_REBINDING_PROTECTION !== "false";
 
   const host = process.env.HOST || "localhost";
 
@@ -28,11 +24,11 @@ export function startSSEServer(server: Server) {
 
   // Warn when binding to all interfaces with DNS rebinding protection disabled
   if (!enableDnsRebindingProtection && isAllInterfacesHost(host)) {
-    console.warn(
+    console.error(
       "WARNING: DNS rebinding protection is disabled while HOST is set to " +
         `'${host}'. This exposes the MCP server to DNS rebinding attacks ` +
         "from any browser on the network. Set DNS_REBINDING_PROTECTION=true " +
-        "(the default) or restrict HOST to 'localhost' / '127.0.0.1'."
+        "(the default) or restrict HOST to 'localhost' / '127.0.0.1'.",
     );
   }
 
@@ -44,18 +40,18 @@ export function startSSEServer(server: Server) {
     isAllInterfacesHost(host) &&
     !process.env.DNS_REBINDING_ALLOWED_HOST
   ) {
-    console.warn(
+    console.error(
       `NOTE: HOST is set to '${host}' (all interfaces) and DNS rebinding ` +
         "protection is enabled, so only requests with a localhost Host header " +
         "are accepted. Clients reaching this server under another hostname " +
         "(a Kubernetes Service name, an ingress host) must be allowed by " +
-        "setting DNS_REBINDING_ALLOWED_HOST to that hostname."
+        "setting DNS_REBINDING_ALLOWED_HOST to that hostname.",
     );
   }
 
   // Currently just copying from docs & allowing for multiple transport connections: https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse
   // Note: When MCP_AUTH_TOKEN is set, requests require X-MCP-AUTH header for authentication
-  let transports: Array<SSEServerTransport> = [];
+  const transports: Array<SSEServerTransport> = [];
 
   app.get("/sse", authMiddleware, async (req, res) => {
     const transport = new SSEServerTransport("/messages", res, {
@@ -67,16 +63,12 @@ export function startSSEServer(server: Server) {
   });
 
   app.post("/messages", authMiddleware, (req, res) => {
-    const transport = transports.find(
-      (t) => t.sessionId === req.query.sessionId
-    );
+    const transport = transports.find((t) => t.sessionId === req.query.sessionId);
 
     if (transport) {
       transport.handlePostMessage(req, res);
     } else {
-      res
-        .status(404)
-        .send("Not found. Must pass valid sessionId as query param.");
+      res.status(404).send("Not found. Must pass valid sessionId as query param.");
     }
   });
 
@@ -97,7 +89,7 @@ export function startSSEServer(server: Server) {
       res.status(503).json({
         status: "not ready",
         reason: "Server initialization incomplete",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -109,12 +101,10 @@ export function startSSEServer(server: Server) {
 
   app.listen(port, host, () => {
     console.error(
-      `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/sse`
+      `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/sse`,
     );
     if (isAuthEnabled()) {
-      console.error(
-        "Authentication enabled: X-MCP-AUTH header required for all MCP requests"
-      );
+      console.error("Authentication enabled: X-MCP-AUTH header required for all MCP requests");
     }
   });
 }

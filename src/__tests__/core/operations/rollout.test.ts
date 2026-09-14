@@ -60,7 +60,16 @@ describe("rollout", () => {
       context: "ctx-a",
     });
     expect(deps.kubectl).toHaveBeenCalledWith(
-      ["rollout", "status", "statefulset/db", "-n", "default", "--timeout=30s", "--context", "ctx-a"],
+      [
+        "rollout",
+        "status",
+        "statefulset/db",
+        "-n",
+        "default",
+        "--timeout=30s",
+        "--context",
+        "ctx-a",
+      ],
       "kubectl_rollout",
     );
   });
@@ -83,7 +92,9 @@ describe("rollout", () => {
 
   test("rejects a flag-like name before calling kubectl", async () => {
     const deps = fakeDeps();
-    await expect(rollout(deps, { subCommand: "status", resourceType: "deployment", name: "--evil" })).rejects.toThrow();
+    await expect(
+      rollout(deps, { subCommand: "status", resourceType: "deployment", name: "--evil" }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

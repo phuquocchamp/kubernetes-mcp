@@ -26,7 +26,13 @@ export async function rollout(deps: Deps, args: RolloutArgs): Promise<RolloutRes
   const namespace = args.namespace ?? "default";
   const watch = args.watch ?? false;
 
-  const cmdArgs = ["rollout", args.subCommand, `${args.resourceType}/${args.name}`, "-n", namespace];
+  const cmdArgs = [
+    "rollout",
+    args.subCommand,
+    `${args.resourceType}/${args.name}`,
+    "-n",
+    namespace,
+  ];
 
   if (args.subCommand === "undo" && args.revision !== undefined) {
     cmdArgs.push(`--to-revision=${args.revision}`);

@@ -29,7 +29,10 @@ describe("deleteResource", () => {
     const deps = fakeDeps();
     const result = await deleteResource(deps, { resourceType: "pod", name: "web" });
 
-    expect(deps.kubectl).toHaveBeenCalledWith(["delete", "pod", "web", "-n", "default"], "kubectl_delete");
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["delete", "pod", "web", "-n", "default"],
+      "kubectl_delete",
+    );
     expect(result.raw).toBe("pod/web deleted\n");
   });
 
@@ -45,7 +48,18 @@ describe("deleteResource", () => {
     });
 
     expect(deps.kubectl).toHaveBeenCalledWith(
-      ["delete", "pods", "-l", "app=nginx", "-n", "team-a", "--force", "--grace-period=0", "--context", "prod"],
+      [
+        "delete",
+        "pods",
+        "-l",
+        "app=nginx",
+        "-n",
+        "team-a",
+        "--force",
+        "--grace-period=0",
+        "--context",
+        "prod",
+      ],
       "kubectl_delete",
     );
   });
@@ -59,7 +73,11 @@ describe("deleteResource", () => {
 
   test("uses --all-namespaces instead of -n when allNamespaces is set", async () => {
     const deps = fakeDeps();
-    await deleteResource(deps, { resourceType: "pods", labelSelector: "app=nginx", allNamespaces: true });
+    await deleteResource(deps, {
+      resourceType: "pods",
+      labelSelector: "app=nginx",
+      allNamespaces: true,
+    });
 
     expect(deps.kubectl).toHaveBeenCalledWith(
       ["delete", "pods", "-l", "app=nginx", "--all-namespaces"],
@@ -74,7 +92,10 @@ describe("deleteResource", () => {
 
     await deleteResource(deps, { manifest: "kind: Pod" });
 
-    expect(writeSpy).toHaveBeenCalledWith(expect.stringMatching(/delete-manifest-\d+\.yaml$/), "kind: Pod");
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/delete-manifest-\d+\.yaml$/),
+      "kind: Pod",
+    );
     const [argv] = (deps.kubectl as any).mock.calls[0];
     expect(argv[0]).toBe("delete");
     expect(argv).toContain("-f");
@@ -88,7 +109,10 @@ describe("deleteResource", () => {
     await deleteResource(deps, { filename: "/tmp/manifest.yaml" });
 
     expect(writeSpy).not.toHaveBeenCalled();
-    expect(deps.kubectl).toHaveBeenCalledWith(["delete", "-f", "/tmp/manifest.yaml"], "kubectl_delete");
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["delete", "-f", "/tmp/manifest.yaml"],
+      "kubectl_delete",
+    );
   });
 
   test("rejects when neither resourceType, manifest, nor filename is provided", async () => {
@@ -99,7 +123,9 @@ describe("deleteResource", () => {
 
   test("rejects resourceType without name or labelSelector", async () => {
     const deps = fakeDeps();
-    await expect(deleteResource(deps, { resourceType: "pod" })).rejects.toMatchObject({ code: "invalid_input" });
+    await expect(deleteResource(deps, { resourceType: "pod" })).rejects.toMatchObject({
+      code: "invalid_input",
+    });
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 

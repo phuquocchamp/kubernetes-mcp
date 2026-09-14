@@ -26,12 +26,28 @@ describe("kubectlContext operation", () => {
 
     const result = await kubectlContext(deps, { operation: "list", output: "json" });
 
-    expect(deps.kubectl).toHaveBeenCalledWith(["config", "get-contexts"], "kubectl_context", RUN_OPTS);
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["config", "get-contexts"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
     expect(result).toEqual({
       kind: "list-structured",
       contexts: [
-        { name: "ctx-a", cluster: "cluster-a", user: "user-a", namespace: "default", isCurrent: true },
-        { name: "ctx-b", cluster: "cluster-b", user: "user-b", namespace: "kube-system", isCurrent: false },
+        {
+          name: "ctx-a",
+          cluster: "cluster-a",
+          user: "user-a",
+          namespace: "default",
+          isCurrent: true,
+        },
+        {
+          name: "ctx-b",
+          cluster: "cluster-b",
+          user: "user-b",
+          namespace: "kube-system",
+          isCurrent: false,
+        },
       ],
     });
   });
@@ -41,7 +57,11 @@ describe("kubectlContext operation", () => {
 
     const result = await kubectlContext(deps, { operation: "list", output: "name" });
 
-    expect(deps.kubectl).toHaveBeenCalledWith(["config", "get-contexts", "-o", "name"], "kubectl_context", RUN_OPTS);
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["config", "get-contexts", "-o", "name"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
     expect(result).toEqual({ kind: "list-raw", raw: "ctx-a\nctx-b\n" });
   });
 
@@ -50,7 +70,11 @@ describe("kubectlContext operation", () => {
 
     const result = await kubectlContext(deps, { operation: "get" });
 
-    expect(deps.kubectl).toHaveBeenCalledWith(["config", "current-context"], "kubectl_context", RUN_OPTS);
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["config", "current-context"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
     expect(result).toEqual({ kind: "get-simple", currentContext: "ctx-a" });
   });
 
@@ -69,8 +93,18 @@ describe("kubectlContext operation", () => {
     const result = await kubectlContext(deps, { operation: "get", detailed: true });
 
     expect(call).toBe(2);
-    expect(deps.kubectl).toHaveBeenNthCalledWith(1, ["config", "current-context"], "kubectl_context", RUN_OPTS);
-    expect(deps.kubectl).toHaveBeenNthCalledWith(2, ["config", "get-contexts"], "kubectl_context", RUN_OPTS);
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      1,
+      ["config", "current-context"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      2,
+      ["config", "get-contexts"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
     expect(result).toEqual({
       kind: "get-detailed",
       name: "ctx-b",
@@ -83,14 +117,29 @@ describe("kubectlContext operation", () => {
   test("set resolves the short name and calls use-context", async () => {
     const deps = makeDeps(async (args) => {
       if (args[1] === "get-contexts") return "ctx-a\nctx-b\n";
-      return "Switched to context \"ctx-b\".\n";
+      return 'Switched to context "ctx-b".\n';
     });
 
     const result = await kubectlContext(deps, { operation: "set", name: "ctx-b" });
 
-    expect(deps.kubectl).toHaveBeenNthCalledWith(1, ["config", "get-contexts", "-o", "name"], "kubectl_context", RUN_OPTS);
-    expect(deps.kubectl).toHaveBeenNthCalledWith(2, ["config", "use-context", "ctx-b"], "kubectl_context", RUN_OPTS);
-    expect(result).toEqual({ kind: "set", success: true, message: "Current context set to 'ctx-b'", context: "ctx-b" });
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      1,
+      ["config", "get-contexts", "-o", "name"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      2,
+      ["config", "use-context", "ctx-b"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
+    expect(result).toEqual({
+      kind: "set",
+      success: true,
+      message: "Current context set to 'ctx-b'",
+      context: "ctx-b",
+    });
   });
 
   test("set resolves an EKS-style ARN context to its short cluster/<name> suffix", async () => {
@@ -102,8 +151,18 @@ describe("kubectlContext operation", () => {
     const arn = "arn:aws:eks:us-east-1:123456789012:cluster/my-cluster";
     const result = await kubectlContext(deps, { operation: "set", name: arn });
 
-    expect(deps.kubectl).toHaveBeenNthCalledWith(2, ["config", "use-context", "my-cluster"], "kubectl_context", RUN_OPTS);
-    expect(result).toEqual({ kind: "set", success: true, message: `Current context set to '${arn}'`, context: arn });
+    expect(deps.kubectl).toHaveBeenNthCalledWith(
+      2,
+      ["config", "use-context", "my-cluster"],
+      "kubectl_context",
+      RUN_OPTS,
+    );
+    expect(result).toEqual({
+      kind: "set",
+      success: true,
+      message: `Current context set to '${arn}'`,
+      context: arn,
+    });
   });
 
   test("set throws invalid_input when the target context does not exist", async () => {
@@ -112,9 +171,11 @@ describe("kubectlContext operation", () => {
       throw new Error("should not reach use-context");
     });
 
-    await expect(kubectlContext(deps, { operation: "set", name: "missing" })).rejects.toMatchObject({
-      code: "invalid_input",
-    });
+    await expect(kubectlContext(deps, { operation: "set", name: "missing" })).rejects.toMatchObject(
+      {
+        code: "invalid_input",
+      },
+    );
   });
 
   test("set throws invalid_input when name is missing", async () => {
@@ -127,7 +188,9 @@ describe("kubectlContext operation", () => {
   test("set rejects a flag-like context name before ever calling kubectl", async () => {
     const deps = makeDeps(async () => "ctx-a\n");
 
-    await expect(kubectlContext(deps, { operation: "set", name: "--kubeconfig=/etc/passwd" })).rejects.toThrow();
+    await expect(
+      kubectlContext(deps, { operation: "set", name: "--kubeconfig=/etc/passwd" }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

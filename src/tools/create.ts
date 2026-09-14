@@ -4,13 +4,20 @@ import { formatCreate } from "../core/format/create.js";
 import { create } from "../core/operations/create.js";
 import type { Deps } from "../core/types.js";
 import { runTool } from "./result.js";
-import { contextSchema, dryRunSchema, namespaceSchema, optionalNameSchema, resourceTypeSchema } from "./schemas.js";
+import {
+  contextSchema,
+  dryRunSchema,
+  namespaceSchema,
+  optionalNameSchema,
+  resourceTypeSchema,
+} from "./schemas.js";
 
 export function registerCreateTools(server: McpServer, deps: Deps): string[] {
   server.registerTool(
     "kubectl_create",
     {
-      description: "Create Kubernetes resources using various methods (from file or using subcommands)",
+      description:
+        "Create Kubernetes resources using various methods (from file or using subcommands)",
       inputSchema: {
         // General options
         dryRun: dryRunSchema,
@@ -32,7 +39,11 @@ export function registerCreateTools(server: McpServer, deps: Deps): string[] {
           .describe(
             "Output format. One of: json|yaml|name|go-template|go-template-file|template|templatefile|jsonpath|jsonpath-as-json|jsonpath-file",
           ),
-        validate: z.boolean().default(true).optional().describe("If true, validate resource schema against server schema"),
+        validate: z
+          .boolean()
+          .default(true)
+          .optional()
+          .describe("If true, validate resource schema against server schema"),
 
         // Create from file method
         manifest: z.string().optional().describe("YAML manifest to create resources from"),
@@ -86,22 +97,35 @@ export function registerCreateTools(server: McpServer, deps: Deps): string[] {
           .enum(["clusterip", "nodeport", "loadbalancer", "externalname"])
           .optional()
           .describe("Type of service to create (clusterip, nodeport, loadbalancer, externalname)"),
-        tcpPort: z.array(z.string()).optional().describe('Port pairs for tcp service (e.g. ["80:8080", "443:8443"])'),
+        tcpPort: z
+          .array(z.string())
+          .optional()
+          .describe('Port pairs for tcp service (e.g. ["80:8080", "443:8443"])'),
 
         // Deployment specific parameters
         image: z.string().optional().describe("Image to use for the containers in the deployment"),
-        replicas: z.number().default(1).optional().describe("Number of replicas to create for the deployment"),
+        replicas: z
+          .number()
+          .default(1)
+          .optional()
+          .describe("Number of replicas to create for the deployment"),
         port: z.number().optional().describe("Port that the container exposes"),
 
         // CronJob specific parameters
-        schedule: z.string().optional().describe('Cron schedule expression for the CronJob (e.g. "*/5 * * * *")'),
+        schedule: z
+          .string()
+          .optional()
+          .describe('Cron schedule expression for the CronJob (e.g. "*/5 * * * *")'),
         suspend: z.boolean().default(false).optional().describe("Whether to suspend the CronJob"),
 
         // Job specific parameters
         command: z.array(z.string()).optional().describe("Command to run in the container"),
 
         // Additional common parameters
-        labels: z.array(z.string()).optional().describe('Labels to apply to the resource (e.g. ["key1=value1", "key2=value2"])'),
+        labels: z
+          .array(z.string())
+          .optional()
+          .describe('Labels to apply to the resource (e.g. ["key1=value1", "key2=value2"])'),
         annotations: z
           .array(z.string())
           .optional()

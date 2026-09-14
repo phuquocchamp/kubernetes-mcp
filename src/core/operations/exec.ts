@@ -21,8 +21,9 @@
  * operation file (core/kubectl.ts is explicitly not-to-touch). Flagged in
  * the final report for the integrator.
  */
-import { assertNotFlagLike } from "../security/argv.js";
+
 import { KubectlError } from "../errors.js";
+import { assertNotFlagLike } from "../security/argv.js";
 import type { Deps } from "../types.js";
 
 export interface ExecArgs {
@@ -57,7 +58,11 @@ export async function execInPod(deps: Deps, args: ExecArgs): Promise<ExecResult>
 
   for (let i = 0; i < args.command.length; i++) {
     if (typeof args.command[i] !== "string") {
-      throw new KubectlError(`Command array element at index ${i} must be a string`, "exec_in_pod", "invalid_input");
+      throw new KubectlError(
+        `Command array element at index ${i} must be a string`,
+        "exec_in_pod",
+        "invalid_input",
+      );
     }
   }
 

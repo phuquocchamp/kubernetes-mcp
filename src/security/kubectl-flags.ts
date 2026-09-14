@@ -1,8 +1,5 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import {
-  execFileSync,
-  type ExecFileSyncOptionsWithStringEncoding,
-} from "child_process";
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { type ExecFileSyncOptionsWithStringEncoding, execFileSync } from "child_process";
 import { isRemoteTransport } from "./transport.js";
 
 // Flags that would let a caller redirect kubectl to a different API server,
@@ -115,9 +112,7 @@ const HELM_DANGEROUS_FLAGS = new Set<string>([
 // built it. This is DANGEROUS_FLAGS minus the context-selection flags, plus
 // the helm equivalents. See assertSafeArgv / execFileSyncSafe below.
 const ARGV_DANGEROUS_FLAGS = new Set<string>(
-  [...DANGEROUS_FLAGS, ...HELM_DANGEROUS_FLAGS].filter(
-    (name) => name !== "context"
-  )
+  [...DANGEROUS_FLAGS, ...HELM_DANGEROUS_FLAGS].filter((name) => name !== "context"),
 );
 
 // Flags that make kubectl read a file from the machine it is running on.
@@ -231,7 +226,7 @@ function reject(flag: string): never {
       `kubectl/helm to a different API server, substitute credentials, or ` +
       `act on the MCP server's own host, which would allow exfiltration of ` +
       `the operator's bearer token. If you genuinely need this flag, set ` +
-      `ALLOW_KUBECTL_UNSAFE_FLAGS=true in the server environment.`
+      `ALLOW_KUBECTL_UNSAFE_FLAGS=true in the server environment.`,
   );
 }
 
@@ -244,10 +239,7 @@ function reject(flag: string): never {
  *   - tokens in the `args` array, in both joined ("--server=x") and split
  *     ("--server", "x") forms, plus short aliases ("-s").
  */
-export function assertNoDangerousFlags(
-  flags?: Record<string, unknown>,
-  args?: string[]
-): void {
+export function assertNoDangerousFlags(flags?: Record<string, unknown>, args?: string[]): void {
   if (isUnsafeFlagsAllowed()) return;
 
   if (flags) {
@@ -293,10 +285,7 @@ export function assertSafeArgv(args: readonly string[]): void {
     // ("-o go-template-file=<path>"), so it has to be matched on the value
     // rather than on the flag name.
     const format = outputFormatValue(tok, args[i + 1]);
-    if (
-      format !== undefined &&
-      FILE_READ_OUTPUT_FORMATS.has(format.split("=")[0])
-    ) {
+    if (format !== undefined && FILE_READ_OUTPUT_FORMATS.has(format.split("=")[0])) {
       rejectOutputFileRead(tok, format);
     }
   }
@@ -308,10 +297,7 @@ export function assertSafeArgv(args: readonly string[]): void {
  * ("-ojson", "-o=json", "--output=json") or sit in the following one, which is
  * why the caller passes `next`.
  */
-function outputFormatValue(
-  tok: string,
-  next: string | undefined
-): string | undefined {
+function outputFormatValue(tok: string, next: string | undefined): string | undefined {
   if (tok.startsWith("--")) {
     if (normalizeFlagName(tok) !== "output") return undefined;
     const eq = tok.indexOf("=");
@@ -339,7 +325,7 @@ function rejectOutputFileRead(tok: string, format: string): never {
       `server's own filesystem, rendering it into the result. No tool needs ` +
       `it, and a resource name or type that parses as this flag is an ` +
       `injection attempt. Use an inline template ("-o go-template=...") or a ` +
-      `jsonpath expression instead.`
+      `jsonpath expression instead.`,
   );
 }
 
@@ -351,7 +337,7 @@ function rejectFileRead(flag: string): never {
       `Streamable HTTP) transports because the path is chosen by the client ` +
       `but resolved on the server host. Pass the file contents inline ` +
       `instead (kubectl_apply/kubectl_create "manifest", kubectl_create ` +
-      `"fromFileContent", or install_helm_chart "values").`
+      `"fromFileContent", or install_helm_chart "values").`,
   );
 }
 
@@ -411,10 +397,7 @@ export function assertNoRemoteFileReads(args: readonly string[]): void {
  *
  * Honours the same ALLOW_KUBECTL_UNSAFE_FLAGS escape hatch as the flag guard.
  */
-export function assertNotFlagLike(
-  value: string | undefined,
-  field: string
-): void {
+export function assertNotFlagLike(value: string | undefined, field: string): void {
   if (isUnsafeFlagsAllowed()) return;
   if (typeof value !== "string" || !value.startsWith("-")) return;
 
@@ -423,7 +406,7 @@ export function assertNotFlagLike(
     `Refusing to run kubectl/helm with ${field}="${value}": a value ` +
       `starting with "-" is parsed as a command-line flag rather than as ` +
       `the ${field}, which would let the caller inject arbitrary flags. ` +
-      `Provide a ${field} that does not begin with "-".`
+      `Provide a ${field} that does not begin with "-".`,
   );
 }
 
@@ -435,7 +418,7 @@ export function assertNotFlagLike(
 export function execFileSyncSafe(
   file: string,
   args: string[],
-  options: ExecFileSyncOptionsWithStringEncoding
+  options: ExecFileSyncOptionsWithStringEncoding,
 ): string {
   assertSafeArgv(args);
   return execFileSync(file, args, options) as string;

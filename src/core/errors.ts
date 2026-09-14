@@ -43,7 +43,9 @@ interface ExecError {
 }
 
 function isExecError(err: unknown): err is ExecError {
-  return typeof err === "object" && err !== null && ("stderr" in err || "code" in err || "killed" in err);
+  return (
+    typeof err === "object" && err !== null && ("stderr" in err || "code" in err || "killed" in err)
+  );
 }
 
 /** First non-empty line of stderr, so the message stays short and scannable. */
@@ -90,7 +92,9 @@ export function normalizeError(err: unknown, operation: string): KubectlError {
       );
     }
 
-    const stderrText = Buffer.isBuffer(err.stderr) ? err.stderr.toString("utf8") : (err.stderr ?? "");
+    const stderrText = Buffer.isBuffer(err.stderr)
+      ? err.stderr.toString("utf8")
+      : (err.stderr ?? "");
     if (stderrText) {
       const { code, safe } = classify(stderrText);
       const line = firstLine(stderrText);

@@ -56,7 +56,9 @@ describe("scale", () => {
 
   test("rejects a flag-like resourceType before calling kubectl", async () => {
     const deps = fakeDeps();
-    await expect(scale(deps, { name: "web", replicas: 1, resourceType: "--evil" })).rejects.toThrow();
+    await expect(
+      scale(deps, { name: "web", replicas: 1, resourceType: "--evil" }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

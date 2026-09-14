@@ -7,8 +7,9 @@
  * shapes happens in core/format/get.ts, exactly matching the JSON the old
  * tool returned as content[0].text.
  */
-import { maskSecretsData, resourceReferencesSecret } from "../../tools/kubectl-get.js";
+
 import { assertNotFlagLike } from "../security/argv.js";
+import { maskSecretsData, resourceReferencesSecret } from "../security/secrets.js";
 import type { Deps } from "../types.js";
 
 export interface GetArgs {
@@ -264,7 +265,8 @@ export async function get(deps: Deps, args: GetArgs): Promise<GetResult> {
   // "secret/my-secret", group-qualified "secrets.v1./my-secret", and
   // comma-separated lists ("secret,configmap") so the masking decision
   // cannot be bypassed by addressing a Secret through an alternate syntax.
-  const shouldMaskSecrets = process.env.MASK_SECRETS !== "false" && resourceReferencesSecret(resourceType);
+  const shouldMaskSecrets =
+    process.env.MASK_SECRETS !== "false" && resourceReferencesSecret(resourceType);
 
   const processedResult = shouldMaskSecrets ? maskSecretsData(raw, output) : raw;
 

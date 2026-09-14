@@ -21,7 +21,10 @@ export function registerNodeTools(server: McpServer, deps: Deps): string[] {
       },
       inputSchema: {
         operation: z.enum(["cordon", "drain", "uncordon"]).describe("Node operation to perform"),
-        nodeName: z.string().optional().describe("Name of the node to operate on (required for cordon, drain, uncordon)"),
+        nodeName: z
+          .string()
+          .optional()
+          .describe("Name of the node to operate on (required for cordon, drain, uncordon)"),
         force: z
           .boolean()
           .optional()
@@ -41,13 +44,23 @@ export function registerNodeTools(server: McpServer, deps: Deps): string[] {
           .optional()
           .default(false)
           .describe("Delete local data even if emptyDir volumes are used (for drain operation)"),
-        ignoreDaemonsets: z.boolean().optional().default(true).describe("Ignore DaemonSet-managed pods (for drain operation)"),
+        ignoreDaemonsets: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Ignore DaemonSet-managed pods (for drain operation)"),
         timeout: z
           .string()
           .optional()
           .default("0")
-          .describe("The length of time to wait before giving up (for drain operation, e.g., '5m', '1h')"),
-        dryRun: z.boolean().optional().default(false).describe("Show what would be done without actually doing it (for drain operation)"),
+          .describe(
+            "The length of time to wait before giving up (for drain operation, e.g., '5m', '1h')",
+          ),
+        dryRun: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Show what would be done without actually doing it (for drain operation)"),
         confirmDrain: z
           .boolean()
           .optional()
@@ -55,7 +68,8 @@ export function registerNodeTools(server: McpServer, deps: Deps): string[] {
           .describe("Explicit confirmation to drain the node (required for drain operation)"),
       },
     },
-    async (args) => runTool("node_management", async () => formatNodeManagement(await manageNode(deps, args))),
+    async (args) =>
+      runTool("node_management", async () => formatNodeManagement(await manageNode(deps, args))),
   );
 
   return ["node_management"];

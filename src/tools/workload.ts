@@ -8,7 +8,13 @@ import { execInPod } from "../core/operations/exec.js";
 import { portForward, stopPortForward } from "../core/operations/port-forward.js";
 import type { Deps } from "../core/types.js";
 import { runTool } from "./result.js";
-import { allNamespacesSchema, contextSchema, namespaceSchema, nameSchema, resourceTypeSchema } from "./schemas.js";
+import {
+  allNamespacesSchema,
+  contextSchema,
+  nameSchema,
+  namespaceSchema,
+  resourceTypeSchema,
+} from "./schemas.js";
 
 export function registerWorkloadTools(server: McpServer, deps: Deps): string[] {
   server.registerTool(
@@ -19,14 +25,19 @@ export function registerWorkloadTools(server: McpServer, deps: Deps): string[] {
         readOnlyHint: true,
       },
       inputSchema: {
-        resourceType: resourceTypeSchema.describe("Type of resource to describe (e.g., pods, deployments, services, etc.)"),
+        resourceType: resourceTypeSchema.describe(
+          "Type of resource to describe (e.g., pods, deployments, services, etc.)",
+        ),
         name: nameSchema.describe("Name of the resource to describe"),
         namespace: namespaceSchema,
         context: contextSchema,
-        allNamespaces: allNamespacesSchema.default(false).describe("If true, describe resources across all namespaces"),
+        allNamespaces: allNamespacesSchema
+          .default(false)
+          .describe("If true, describe resources across all namespaces"),
       },
     },
-    async (args) => runTool("kubectl_describe", async () => formatDescribe(await describe(deps, args))),
+    async (args) =>
+      runTool("kubectl_describe", async () => formatDescribe(await describe(deps, args))),
   );
 
   server.registerTool(
@@ -44,7 +55,8 @@ export function registerWorkloadTools(server: McpServer, deps: Deps): string[] {
         namespace: namespaceSchema,
       },
     },
-    async (args) => runTool("port_forward", async () => formatPortForward(await portForward(deps, args))),
+    async (args) =>
+      runTool("port_forward", async () => formatPortForward(await portForward(deps, args))),
   );
 
   server.registerTool(
@@ -58,7 +70,10 @@ export function registerWorkloadTools(server: McpServer, deps: Deps): string[] {
         id: z.string().describe("The id of the port-forward to stop"),
       },
     },
-    async (args) => runTool("stop_port_forward", async () => formatStopPortForward(await stopPortForward(deps, args))),
+    async (args) =>
+      runTool("stop_port_forward", async () =>
+        formatStopPortForward(await stopPortForward(deps, args)),
+      ),
   );
 
   server.registerTool(
@@ -78,8 +93,14 @@ export function registerWorkloadTools(server: McpServer, deps: Deps): string[] {
           .describe(
             'Command to execute as an array of strings (e.g. ["ls", "-la", "/app"]). First element is the executable, remaining are arguments. Shell operators like pipes, redirects, or command chaining are not supported - use explicit array format for security.',
           ),
-        container: z.string().optional().describe("Container name (required when pod has multiple containers)"),
-        timeout: z.number().optional().describe("Timeout for command - 60000 milliseconds if not specified"),
+        container: z
+          .string()
+          .optional()
+          .describe("Container name (required when pod has multiple containers)"),
+        timeout: z
+          .number()
+          .optional()
+          .describe("Timeout for command - 60000 milliseconds if not specified"),
         context: contextSchema,
       },
     },

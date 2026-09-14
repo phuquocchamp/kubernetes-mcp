@@ -13,12 +13,16 @@ const COLUMN_GAP = "  ";
 
 export function table(headers: string[], rows: string[][]): string {
   const all = [headers, ...rows.map((row) => row.map((cell) => (cell === "" ? "-" : cell)))];
-  const widths = headers.map((_, column) => Math.max(...all.map((row) => (row[column] ?? "").length)));
+  const widths = headers.map((_, column) =>
+    Math.max(...all.map((row) => (row[column] ?? "").length)),
+  );
 
   return all
     .map((row) =>
       row
-        .map((cell, column) => (column === row.length - 1 ? cell : cell.padEnd(widths[column] ?? 0)))
+        .map((cell, column) =>
+          column === row.length - 1 ? cell : cell.padEnd(widths[column] ?? 0),
+        )
         .join(COLUMN_GAP)
         .trimEnd(),
     )

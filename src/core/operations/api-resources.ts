@@ -15,7 +15,10 @@ export interface ApiResourcesResult {
   raw: string;
 }
 
-export async function listApiResources(deps: Deps, args: ApiResourcesArgs): Promise<ApiResourcesResult> {
+export async function listApiResources(
+  deps: Deps,
+  args: ApiResourcesArgs,
+): Promise<ApiResourcesResult> {
   const cmdArgs = ["api-resources"];
 
   if (args.apiGroup) cmdArgs.push(`--api-group=${args.apiGroup}`);

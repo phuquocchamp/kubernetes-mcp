@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { create } from "../../../core/operations/create.js";
 import type { Deps } from "../../../core/types.js";
 
-const TRANSPORT_ENV = ["ENABLE_UNSAFE_SSE_TRANSPORT", "ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT"] as const;
+const TRANSPORT_ENV = [
+  "ENABLE_UNSAFE_SSE_TRANSPORT",
+  "ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT",
+] as const;
 
 function fakeDeps(kubectlImpl?: (...a: unknown[]) => unknown): Deps {
   return {

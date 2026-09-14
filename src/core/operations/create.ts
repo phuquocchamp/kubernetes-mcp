@@ -321,7 +321,7 @@ export async function create(deps: Deps, input: CreateArgs): Promise<CreateResul
       try {
         fs.unlinkSync(tempFile);
       } catch (err) {
-        console.warn(`Failed to delete temporary file ${tempFile}: ${err}`);
+        console.error(`Failed to delete temporary file ${tempFile}: ${err}`);
       }
     });
   };

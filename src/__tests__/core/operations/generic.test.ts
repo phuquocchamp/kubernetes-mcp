@@ -44,9 +44,17 @@ describe("generic", () => {
 
   test("uses --all-namespaces instead of --namespace when allNamespaces is set", async () => {
     const deps = fakeDeps();
-    await generic(deps, { command: "get", resourceType: "pods", allNamespaces: true, namespace: "ignored" });
+    await generic(deps, {
+      command: "get",
+      resourceType: "pods",
+      allNamespaces: true,
+      namespace: "ignored",
+    });
 
-    expect(deps.kubectl).toHaveBeenCalledWith(["get", "pods", "--all-namespaces"], "kubectl_generic");
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      ["get", "pods", "--all-namespaces"],
+      "kubectl_generic",
+    );
   });
 
   test("appends outputFormat, flags, args and context in order", async () => {
@@ -68,13 +76,17 @@ describe("generic", () => {
 
   test("rejects a dangerous flag in `flags` before calling kubectl", async () => {
     const deps = fakeDeps();
-    await expect(generic(deps, { command: "get", flags: { server: "https://evil" } })).rejects.toThrow();
+    await expect(
+      generic(deps, { command: "get", flags: { server: "https://evil" } }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 
   test("rejects a dangerous flag in `args` before calling kubectl", async () => {
     const deps = fakeDeps();
-    await expect(generic(deps, { command: "get", args: ["--kubeconfig=/tmp/evil"] })).rejects.toThrow();
+    await expect(
+      generic(deps, { command: "get", args: ["--kubeconfig=/tmp/evil"] }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 
@@ -94,7 +106,9 @@ describe("generic", () => {
     process.env.ENABLE_UNSAFE_SSE_TRANSPORT = "true";
     const deps = fakeDeps();
 
-    await expect(generic(deps, { command: "apply", args: ["-f", "/etc/passwd"] })).rejects.toThrow();
+    await expect(
+      generic(deps, { command: "apply", args: ["-f", "/etc/passwd"] }),
+    ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

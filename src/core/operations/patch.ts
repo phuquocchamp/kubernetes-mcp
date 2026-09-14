@@ -22,7 +22,11 @@ export interface PatchResult {
 
 export async function patch(deps: Deps, args: PatchArgs): Promise<PatchResult> {
   if (!args.patchData && !args.patchFile) {
-    throw new KubectlError("Either patchData or patchFile must be provided", "kubectl_patch", "invalid_input");
+    throw new KubectlError(
+      "Either patchData or patchFile must be provided",
+      "kubectl_patch",
+      "invalid_input",
+    );
   }
 
   // Reject server-side filesystem reads on remote transports. Over SSE /
@@ -41,8 +45,15 @@ export async function patch(deps: Deps, args: PatchArgs): Promise<PatchResult> {
     );
   }
 
-  if (args.patchData !== undefined && (args.patchData === null || typeof args.patchData !== "object")) {
-    throw new KubectlError("patchData must be a valid JSON object, not a string.", "kubectl_patch", "invalid_input");
+  if (
+    args.patchData !== undefined &&
+    (args.patchData === null || typeof args.patchData !== "object")
+  ) {
+    throw new KubectlError(
+      "patchData must be a valid JSON object, not a string.",
+      "kubectl_patch",
+      "invalid_input",
+    );
   }
 
   const namespace = args.namespace ?? "default";
@@ -70,7 +81,7 @@ export async function patch(deps: Deps, args: PatchArgs): Promise<PatchResult> {
       try {
         fs.unlinkSync(tempFile);
       } catch (err) {
-        console.warn(`Failed to delete temporary file ${tempFile}: ${err}`);
+        console.error(`Failed to delete temporary file ${tempFile}: ${err}`);
       }
     }
   }

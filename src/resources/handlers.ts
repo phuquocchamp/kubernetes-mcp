@@ -1,5 +1,5 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { KubernetesManager } from "../types.js";
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+import type { KubernetesManager } from "../types.js";
 
 export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
   listResources: async () => {
@@ -64,9 +64,7 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
 
       switch (resourceType) {
         case "pods": {
-          const { items } = await k8sManager
-            .getCoreApi()
-            .listNamespacedPod({ namespace });
+          const { items } = await k8sManager.getCoreApi().listNamespacedPod({ namespace });
           return {
             contents: [
               {
@@ -78,9 +76,7 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
           };
         }
         case "deployments": {
-          const { items } = await k8sManager
-            .getAppsApi()
-            .listNamespacedDeployment({ namespace });
+          const { items } = await k8sManager.getAppsApi().listNamespacedDeployment({ namespace });
           return {
             contents: [
               {
@@ -92,9 +88,7 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
           };
         }
         case "services": {
-          const { items } = await k8sManager
-            .getCoreApi()
-            .listNamespacedService({ namespace });
+          const { items } = await k8sManager.getCoreApi().listNamespacedService({ namespace });
           return {
             contents: [
               {
@@ -108,15 +102,12 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
         default:
           throw new McpError(
             ErrorCode.InvalidRequest,
-            `Unsupported resource type: ${resourceType}`
+            `Unsupported resource type: ${resourceType}`,
           );
       }
     } catch (error) {
       if (error instanceof McpError) throw error;
-      throw new McpError(
-        ErrorCode.InternalError,
-        `Failed to read resource: ${error}`
-      );
+      throw new McpError(ErrorCode.InternalError, `Failed to read resource: ${error}`);
     }
   },
 });

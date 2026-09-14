@@ -27,7 +27,13 @@ export async function scale(deps: Deps, args: ScaleArgs): Promise<ScaleResult> {
   const resourceType = args.resourceType ?? "deployment";
   const namespace = args.namespace ?? "default";
 
-  const cmdArgs = ["scale", resourceType, args.name, `--replicas=${args.replicas}`, `--namespace=${namespace}`];
+  const cmdArgs = [
+    "scale",
+    resourceType,
+    args.name,
+    `--replicas=${args.replicas}`,
+    `--namespace=${namespace}`,
+  ];
   if (args.context) cmdArgs.push("--context", args.context);
 
   const raw = await deps.kubectl(cmdArgs, "kubectl_scale");

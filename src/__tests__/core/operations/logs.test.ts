@@ -5,7 +5,10 @@ import { KubectlError } from "../../../core/errors.js";
 import { logs } from "../../../core/operations/logs.js";
 import type { Deps } from "../../../core/types.js";
 
-function fakeDeps(kubectlImpl: (args: string[]) => string | Promise<string>): { deps: Deps; kubectl: ReturnType<typeof vi.fn> } {
+function fakeDeps(kubectlImpl: (args: string[]) => string | Promise<string>): {
+  deps: Deps;
+  kubectl: ReturnType<typeof vi.fn>;
+} {
   const kubectl = vi.fn().mockImplementation(async (args: string[]) => kubectlImpl(args));
   const helm = vi.fn();
   const deps = {
@@ -23,7 +26,9 @@ describe("logs operation", () => {
 
     const result = await logs(deps, { resourceType: "pod", name: "my-pod" });
 
-    expect(kubectl).toHaveBeenCalledWith(["-n", "default", "logs", "my-pod"], "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() });
+    expect(kubectl).toHaveBeenCalledWith(["-n", "default", "logs", "my-pod"], "kubectl_logs", {
+      maxBuffer: getSpawnMaxBuffer(),
+    });
     expect(result).toEqual({ kind: "pod", name: "my-pod", logs: "pod log output" });
   });
 
@@ -73,7 +78,11 @@ describe("logs operation", () => {
       return `logs for ${args[3]}`;
     });
 
-    const result = await logs(deps, { resourceType: "deployment", name: "web", namespace: "default" });
+    const result = await logs(deps, {
+      resourceType: "deployment",
+      name: "web",
+      namespace: "default",
+    });
 
     expect(kubectl).toHaveBeenCalledWith(
       ["-n", "default", "get", "deployment", "web", "-o", "jsonpath={.spec.selector.matchLabels}"],
@@ -81,7 +90,15 @@ describe("logs operation", () => {
       { maxBuffer: getSpawnMaxBuffer() },
     );
     expect(kubectl).toHaveBeenCalledWith(
-      ["-n", "default", "get", "pods", "--selector=app=web", "-o", "jsonpath={.items[*].metadata.name}"],
+      [
+        "-n",
+        "default",
+        "get",
+        "pods",
+        "--selector=app=web",
+        "-o",
+        "jsonpath={.items[*].metadata.name}",
+      ],
       "kubectl_logs",
       { maxBuffer: getSpawnMaxBuffer() },
     );
@@ -102,7 +119,15 @@ describe("logs operation", () => {
     const result = await logs(deps, { resourceType: "job", name: "my-job", namespace: "default" });
 
     expect(kubectl).toHaveBeenCalledWith(
-      ["-n", "default", "get", "pods", "--selector=job-name=my-job", "-o", "jsonpath={.items[*].metadata.name}"],
+      [
+        "-n",
+        "default",
+        "get",
+        "pods",
+        "--selector=job-name=my-job",
+        "-o",
+        "jsonpath={.items[*].metadata.name}",
+      ],
       "kubectl_logs",
       { maxBuffer: getSpawnMaxBuffer() },
     );
@@ -117,7 +142,11 @@ describe("logs operation", () => {
   test("returns a message when a label selector matches no pods", async () => {
     const { deps } = fakeDeps(() => "");
 
-    const result = await logs(deps, { resourceType: "job", name: "empty-job", namespace: "default" });
+    const result = await logs(deps, {
+      resourceType: "job",
+      name: "empty-job",
+      namespace: "default",
+    });
 
     expect(result).toEqual({
       kind: "message",
@@ -133,10 +162,22 @@ describe("logs operation", () => {
       return `logs for ${args[3]}`;
     });
 
-    const result = await logs(deps, { resourceType: "cronjob", name: "my-cron", namespace: "default" });
+    const result = await logs(deps, {
+      resourceType: "cronjob",
+      name: "my-cron",
+      namespace: "default",
+    });
 
     expect(kubectl).toHaveBeenCalledWith(
-      ["-n", "default", "get", "jobs", "--selector=job-name=my-cron", "-o", "jsonpath={.items[*].metadata.name}"],
+      [
+        "-n",
+        "default",
+        "get",
+        "jobs",
+        "--selector=job-name=my-cron",
+        "-o",
+        "jsonpath={.items[*].metadata.name}",
+      ],
       "kubectl_logs",
       { maxBuffer: getSpawnMaxBuffer() },
     );
@@ -151,9 +192,16 @@ describe("logs operation", () => {
   test("returns a message when a cronjob has no jobs", async () => {
     const { deps } = fakeDeps(() => "");
 
-    const result = await logs(deps, { resourceType: "cronjob", name: "idle-cron", namespace: "default" });
+    const result = await logs(deps, {
+      resourceType: "cronjob",
+      name: "idle-cron",
+      namespace: "default",
+    });
 
-    expect(result).toEqual({ kind: "message", message: "No jobs found for cronjob idle-cron in namespace default" });
+    expect(result).toEqual({
+      kind: "message",
+      message: "No jobs found for cronjob idle-cron in namespace default",
+    });
   });
 
   test("falls back to an explicit labelSelector when resourceType is unrecognized", async () => {
@@ -169,7 +217,15 @@ describe("logs operation", () => {
     });
 
     expect(kubectl).toHaveBeenCalledWith(
-      ["-n", "default", "get", "pods", "--selector=app=custom", "-o", "jsonpath={.items[*].metadata.name}"],
+      [
+        "-n",
+        "default",
+        "get",
+        "pods",
+        "--selector=app=custom",
+        "-o",
+        "jsonpath={.items[*].metadata.name}",
+      ],
       "kubectl_logs",
       { maxBuffer: getSpawnMaxBuffer() },
     );
@@ -201,14 +257,18 @@ describe("logs operation", () => {
   test("throws for an unsupported resource type with no labelSelector", async () => {
     const { deps, kubectl } = fakeDeps(() => "");
 
-    await expect(logs(deps, { resourceType: "unsupported" as never, name: "x" })).rejects.toThrow(KubectlError);
+    await expect(logs(deps, { resourceType: "unsupported" as never, name: "x" })).rejects.toThrow(
+      KubectlError,
+    );
     expect(kubectl).not.toHaveBeenCalled();
   });
 
   test("rejects a flag-like name", async () => {
     const { deps, kubectl } = fakeDeps(() => "");
 
-    await expect(logs(deps, { resourceType: "pod", name: "--kubeconfig=/tmp/evil" })).rejects.toThrow(McpError);
+    await expect(
+      logs(deps, { resourceType: "pod", name: "--kubeconfig=/tmp/evil" }),
+    ).rejects.toThrow(McpError);
     expect(kubectl).not.toHaveBeenCalled();
   });
 });

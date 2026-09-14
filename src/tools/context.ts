@@ -17,18 +17,32 @@ export function registerContextTools(server: McpServer, deps: Deps): string[] {
         operation: z
           .enum(["list", "get", "set"])
           .default("list")
-          .describe("Operation to perform: list contexts, get current context, or set current context"),
-        name: z.string().optional().describe("Name of the context to set as current (required for set operation)"),
+          .describe(
+            "Operation to perform: list contexts, get current context, or set current context",
+          ),
+        name: z
+          .string()
+          .optional()
+          .describe("Name of the context to set as current (required for set operation)"),
         showCurrent: z
           .boolean()
           .default(true)
           .optional()
           .describe("When listing contexts, highlight which one is currently active"),
-        detailed: z.boolean().default(false).optional().describe("Include detailed information about the context"),
-        output: z.enum(["json", "yaml", "name", "custom"]).default("json").optional().describe("Output format"),
+        detailed: z
+          .boolean()
+          .default(false)
+          .optional()
+          .describe("Include detailed information about the context"),
+        output: z
+          .enum(["json", "yaml", "name", "custom"])
+          .default("json")
+          .optional()
+          .describe("Output format"),
       },
     },
-    async (args) => runTool("kubectl_context", async () => formatContext(await kubectlContext(deps, args))),
+    async (args) =>
+      runTool("kubectl_context", async () => formatContext(await kubectlContext(deps, args))),
   );
 
   server.registerTool(
@@ -41,7 +55,8 @@ export function registerContextTools(server: McpServer, deps: Deps): string[] {
       },
       inputSchema: {},
     },
-    async () => runTool("kubectl_reconnect", async () => formatReconnect(await kubectlReconnect(deps))),
+    async () =>
+      runTool("kubectl_reconnect", async () => formatReconnect(await kubectlReconnect(deps))),
   );
 
   return ["kubectl_context", "kubectl_reconnect"];

@@ -25,14 +25,20 @@ export function registerDeleteTools(server: McpServer, deps: Deps): string[] {
   server.registerTool(
     "kubectl_delete",
     {
-      description: "Delete Kubernetes resources by resource type, name, labels, or from a manifest file",
+      description:
+        "Delete Kubernetes resources by resource type, name, labels, or from a manifest file",
       annotations: { destructiveHint: true },
       inputSchema: {
         resourceType: resourceTypeSchema.optional(),
         name: optionalNameSchema,
         namespace: namespaceSchema,
-        labelSelector: labelSelectorSchema.describe("Delete resources matching this label selector (e.g. 'app=nginx')"),
-        manifest: z.string().optional().describe("YAML manifest defining resources to delete (optional)"),
+        labelSelector: labelSelectorSchema.describe(
+          "Delete resources matching this label selector (e.g. 'app=nginx')",
+        ),
+        manifest: z
+          .string()
+          .optional()
+          .describe("YAML manifest defining resources to delete (optional)"),
         filename: z
           .string()
           .optional()
@@ -52,7 +58,8 @@ export function registerDeleteTools(server: McpServer, deps: Deps): string[] {
         context: contextSchema,
       },
     },
-    async (args) => runTool("kubectl_delete", async () => formatDelete(await deleteResource(deps, args))),
+    async (args) =>
+      runTool("kubectl_delete", async () => formatDelete(await deleteResource(deps, args))),
   );
 
   server.registerTool(
@@ -61,22 +68,36 @@ export function registerDeleteTools(server: McpServer, deps: Deps): string[] {
       description: "Execute any kubectl command with the provided arguments and flags",
       annotations: { destructiveHint: true },
       inputSchema: {
-        command: z.string().min(1).describe("The kubectl command to execute (e.g. patch, rollout, top)"),
-        subCommand: z.string().optional().describe("Subcommand if applicable (e.g. 'history' for rollout)"),
-        resourceType: resourceTypeSchema.optional().describe("Resource type (e.g. pod, deployment)"),
+        command: z
+          .string()
+          .min(1)
+          .describe("The kubectl command to execute (e.g. patch, rollout, top)"),
+        subCommand: z
+          .string()
+          .optional()
+          .describe("Subcommand if applicable (e.g. 'history' for rollout)"),
+        resourceType: resourceTypeSchema
+          .optional()
+          .describe("Resource type (e.g. pod, deployment)"),
         name: optionalNameSchema.describe("Resource name"),
         namespace: namespaceSchema,
-        allNamespaces: allNamespacesSchema.default(false).describe("If true, run the command across all namespaces"),
+        allNamespaces: allNamespacesSchema
+          .default(false)
+          .describe("If true, run the command across all namespaces"),
         outputFormat: z
           .enum(["json", "yaml", "wide", "name", "custom"])
           .optional()
           .describe("Output format (e.g. json, yaml, wide)"),
-        flags: z.record(z.string(), z.unknown()).optional().describe("Command flags as key-value pairs"),
+        flags: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe("Command flags as key-value pairs"),
         args: z.array(z.string()).optional().describe("Additional command arguments"),
         context: contextSchema,
       },
     },
-    async (args) => runTool("kubectl_generic", async () => formatGeneric(await generic(deps, args))),
+    async (args) =>
+      runTool("kubectl_generic", async () => formatGeneric(await generic(deps, args))),
   );
 
   server.registerTool(

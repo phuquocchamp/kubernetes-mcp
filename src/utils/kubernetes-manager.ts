@@ -1,10 +1,9 @@
+import * as k8s from "@kubernetes/client-node";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-import * as k8s from "@kubernetes/client-node";
-
-import { ResourceTracker, PortForwardTracker, WatchTracker } from "../types.js";
+import type { PortForwardTracker, ResourceTracker, WatchTracker } from "../types.js";
 
 export class KubernetesManager {
   private resources: ResourceTracker[] = [];
@@ -27,7 +26,7 @@ export class KubernetesManager {
         throw new Error(
           `Failed to parse KUBECONFIG_YAML: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     } else if (this.hasEnvKubeconfigJson()) {
@@ -41,7 +40,7 @@ export class KubernetesManager {
         throw new Error(
           `Failed to parse KUBECONFIG_JSON: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     } else if (this.hasEnvMinimalKubeconfig()) {
@@ -55,7 +54,7 @@ export class KubernetesManager {
         throw new Error(
           `Failed to create kubeconfig from K8S_SERVER and K8S_TOKEN: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     } else if (this.isRunningInCluster()) {
@@ -71,7 +70,7 @@ export class KubernetesManager {
         throw new Error(
           `Failed to load kubeconfig from KUBECONFIG_PATH: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     } else if (this.hasEnvKubeconfig()) {
@@ -87,10 +86,10 @@ export class KubernetesManager {
       try {
         this.setCurrentContext(process.env.K8S_CONTEXT);
       } catch (error) {
-        console.warn(
+        console.error(
           `Warning: Could not set context to ${process.env.K8S_CONTEXT}: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       }
     }
@@ -105,8 +104,7 @@ export class KubernetesManager {
    * A very simple test to check if the application is running inside a Kubernetes cluster
    */
   private isRunningInCluster(): boolean {
-    const serviceAccountPath =
-      "/var/run/secrets/kubernetes.io/serviceaccount/token";
+    const serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount/token";
     try {
       return fs.existsSync(serviceAccountPath);
     } catch {
@@ -118,18 +116,14 @@ export class KubernetesManager {
    * Check if KUBECONFIG_YAML environment variable is available
    */
   private hasEnvKubeconfigYaml(): boolean {
-    return !!(
-      process.env.KUBECONFIG_YAML && process.env.KUBECONFIG_YAML.trim()
-    );
+    return !!(process.env.KUBECONFIG_YAML && process.env.KUBECONFIG_YAML.trim());
   }
 
   /**
    * Check if KUBECONFIG_JSON environment variable is available
    */
   private hasEnvKubeconfigJson(): boolean {
-    return !!(
-      process.env.KUBECONFIG_JSON && process.env.KUBECONFIG_JSON.trim()
-    );
+    return !!(process.env.KUBECONFIG_JSON && process.env.KUBECONFIG_JSON.trim());
   }
 
   /**
@@ -176,9 +170,7 @@ export class KubernetesManager {
    */
   private loadEnvMinimalKubeconfig(): void {
     if (!process.env.K8S_SERVER || !process.env.K8S_TOKEN) {
-      throw new Error(
-        "K8S_SERVER and K8S_TOKEN environment variables are required"
-      );
+      throw new Error("K8S_SERVER and K8S_TOKEN environment variables are required");
     }
 
     // When K8S_CA_DATA is provided, force skipTLSVerify to false as they are incompatible
@@ -217,9 +209,7 @@ export class KubernetesManager {
    * Check if KUBECONFIG_PATH environment variable is available
    */
   private hasEnvKubeconfigPath(): boolean {
-    return !!(
-      process.env.KUBECONFIG_PATH && process.env.KUBECONFIG_PATH.trim()
-    );
+    return !!(process.env.KUBECONFIG_PATH && process.env.KUBECONFIG_PATH.trim());
   }
 
   private hasEnvKubeconfig(): boolean {
@@ -245,9 +235,7 @@ export class KubernetesManager {
     // Check if the requested context exists
     if (!contextNames.includes(contextName)) {
       throw new Error(
-        `Context '${contextName}' not found. Available contexts: ${contextNames.join(
-          ", "
-        )}`
+        `Context '${contextName}' not found. Available contexts: ${contextNames.join(", ")}`,
       );
     }
     // Set the current context
@@ -266,15 +254,9 @@ export class KubernetesManager {
     // Delete tracked resources in reverse order
     for (const resource of [...this.resources].reverse()) {
       try {
-        await this.deleteResource(
-          resource.kind,
-          resource.name,
-          resource.namespace
-        );
+        await this.deleteResource(resource.kind, resource.name, resource.namespace);
       } catch (error) {
-        process.stderr.write(
-          `Failed to delete ${resource.kind} ${resource.name}: ${error}\n`
-        );
+        process.stderr.write(`Failed to delete ${resource.kind} ${resource.name}: ${error}\n`);
       }
     }
   }
@@ -299,7 +281,7 @@ export class KubernetesManager {
         break;
     }
     this.resources = this.resources.filter(
-      (r) => !(r.kind === kind && r.name === name && r.namespace === namespace)
+      (r) => !(r.kind === kind && r.name === name && r.namespace === namespace),
     );
   }
 
@@ -356,10 +338,7 @@ export class KubernetesManager {
       const tempDir = os.tmpdir();
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const randomString = Math.random().toString(36).substring(2);
-      const tempKubeconfigPath = path.join(
-        tempDir,
-        `kubeconfig-${timestamp}-${randomString}`
-      );
+      const tempKubeconfigPath = path.join(tempDir, `kubeconfig-${timestamp}-${randomString}`);
 
       // Write temporary kubeconfig file
       fs.writeFileSync(tempKubeconfigPath, kubeconfigYaml, {

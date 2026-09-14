@@ -75,7 +75,10 @@ export interface UninstallHelmResult {
 // arbitrary server files (kubeconfig, service-account token,
 // /proc/self/environ, etc.) via helm's parse errors. Clients on these
 // transports must pass values inline via `values` instead.
-function rejectValuesFileOnRemoteTransport(valuesFile: string | undefined, operation: string): void {
+function rejectValuesFileOnRemoteTransport(
+  valuesFile: string | undefined,
+  operation: string,
+): void {
   if (valuesFile && isRemoteTransport()) {
     throw new KubectlError(
       "The 'valuesFile' parameter reads a file from the MCP server's filesystem and is disabled on remote (SSE/Streamable HTTP) transports. Pass the values inline via 'values' instead.",
@@ -115,13 +118,18 @@ function writeValuesTempFile(values: Record<string, unknown>): string {
  * apply). This mode bypasses authentication issues and kubeconfig API
  * version mismatches.
  */
-async function installHelmChartTemplate(deps: Deps, args: InstallHelmChartArgs): Promise<InstallHelmResult> {
+async function installHelmChartTemplate(
+  deps: Deps,
+  args: InstallHelmChartArgs,
+): Promise<InstallHelmResult> {
   const namespace = args.namespace ?? "default";
   const steps: string[] = [];
 
   if (args.repo) {
     steps.push(`Adding helm repository: ${args.repo}`);
-    await deps.helm(["repo", "add", "temp-repo", args.repo], "install_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
+    await deps.helm(["repo", "add", "temp-repo", args.repo], "install_helm_chart", {
+      timeoutMs: HELM_TIMEOUT_MS,
+    });
     await deps.helm(["repo", "update"], "install_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
   }
 
@@ -156,7 +164,9 @@ async function installHelmChartTemplate(deps: Deps, args: InstallHelmChartArgs):
 
   let yamlOutput: string;
   try {
-    yamlOutput = await deps.helm(templateArgs, "install_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
+    yamlOutput = await deps.helm(templateArgs, "install_helm_chart", {
+      timeoutMs: HELM_TIMEOUT_MS,
+    });
   } finally {
     if (tempValuesFile) unlinkSync(tempValuesFile);
   }
@@ -179,7 +189,10 @@ async function installHelmChartTemplate(deps: Deps, args: InstallHelmChartArgs):
 }
 
 /** Install a Helm chart, either via standard `helm install` or template mode. */
-export async function installHelmChart(deps: Deps, args: InstallHelmChartArgs): Promise<InstallHelmResult> {
+export async function installHelmChart(
+  deps: Deps,
+  args: InstallHelmChartArgs,
+): Promise<InstallHelmResult> {
   const namespace = args.namespace ?? "default";
   rejectValuesFileOnRemoteTransport(args.valuesFile, "install_helm_chart");
   assertOperandsNotFlagLike({ ...args, namespace });
@@ -190,7 +203,9 @@ export async function installHelmChart(deps: Deps, args: InstallHelmChartArgs): 
 
   if (args.repo) {
     const repoName = args.chart.split("/")[0];
-    await deps.helm(["repo", "add", repoName, args.repo], "install_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
+    await deps.helm(["repo", "add", repoName, args.repo], "install_helm_chart", {
+      timeoutMs: HELM_TIMEOUT_MS,
+    });
     await deps.helm(["repo", "update"], "install_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
   }
 
@@ -219,14 +234,19 @@ export async function installHelmChart(deps: Deps, args: InstallHelmChartArgs): 
 }
 
 /** Upgrade an existing Helm chart release. */
-export async function upgradeHelmChart(deps: Deps, args: UpgradeHelmChartArgs): Promise<UpgradeHelmResult> {
+export async function upgradeHelmChart(
+  deps: Deps,
+  args: UpgradeHelmChartArgs,
+): Promise<UpgradeHelmResult> {
   const namespace = args.namespace ?? "default";
   rejectValuesFileOnRemoteTransport(args.valuesFile, "upgrade_helm_chart");
   assertOperandsNotFlagLike({ ...args, namespace });
 
   if (args.repo) {
     const repoName = args.chart.split("/")[0];
-    await deps.helm(["repo", "add", repoName, args.repo], "upgrade_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
+    await deps.helm(["repo", "add", repoName, args.repo], "upgrade_helm_chart", {
+      timeoutMs: HELM_TIMEOUT_MS,
+    });
     await deps.helm(["repo", "update"], "upgrade_helm_chart", { timeoutMs: HELM_TIMEOUT_MS });
   }
 
@@ -252,7 +272,10 @@ export async function upgradeHelmChart(deps: Deps, args: UpgradeHelmChartArgs): 
 }
 
 /** Uninstall a Helm chart release. */
-export async function uninstallHelmChart(deps: Deps, args: UninstallHelmChartArgs): Promise<UninstallHelmResult> {
+export async function uninstallHelmChart(
+  deps: Deps,
+  args: UninstallHelmChartArgs,
+): Promise<UninstallHelmResult> {
   const namespace = args.namespace ?? "default";
   assertNotFlagLike(args.name, "release name");
   assertNotFlagLike(namespace, "namespace");

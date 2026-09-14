@@ -5,7 +5,10 @@
  */
 import { z } from "zod";
 
-export const namespaceSchema = z.string().optional().describe('Kubernetes namespace. Defaults to "default".');
+export const namespaceSchema = z
+  .string()
+  .optional()
+  .describe('Kubernetes namespace. Defaults to "default".');
 
 export const contextSchema = z
   .string()
@@ -29,9 +32,15 @@ export const dryRunSchema = z
   .optional()
   .describe("If true, validate only — do not actually execute the operation.");
 
-export const allNamespacesSchema = z.boolean().optional().describe("If true, operate across all namespaces.");
+export const allNamespacesSchema = z
+  .boolean()
+  .optional()
+  .describe("If true, operate across all namespaces.");
 
-export const labelSelectorSchema = z.string().optional().describe("Label selector, e.g. 'app=nginx'.");
+export const labelSelectorSchema = z
+  .string()
+  .optional()
+  .describe("Label selector, e.g. 'app=nginx'.");
 
 export const fieldSelectorSchema = z
   .string()

@@ -10,12 +10,21 @@ export function formatContext(result: ContextResult): string {
       return JSON.stringify({ currentContext: result.currentContext }, null, 2);
     case "get-detailed":
       return JSON.stringify(
-        { name: result.name, cluster: result.cluster, user: result.user, namespace: result.namespace },
+        {
+          name: result.name,
+          cluster: result.cluster,
+          user: result.user,
+          namespace: result.namespace,
+        },
         null,
         2,
       );
     case "set":
-      return JSON.stringify({ success: true, message: result.message, context: result.context }, null, 2);
+      return JSON.stringify(
+        { success: true, message: result.message, context: result.context },
+        null,
+        2,
+      );
   }
 }
 

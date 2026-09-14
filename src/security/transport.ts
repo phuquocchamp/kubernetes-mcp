@@ -13,7 +13,6 @@
 // Guards use this helper to reject path-based reads on remote transports.
 export function isRemoteTransport(): boolean {
   return Boolean(
-    process.env.ENABLE_UNSAFE_SSE_TRANSPORT ||
-      process.env.ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT
+    process.env.ENABLE_UNSAFE_SSE_TRANSPORT || process.env.ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT,
   );
 }

@@ -17,7 +17,7 @@ export const ReadResourceResponseSchema = z.object({
       uri: z.string(),
       mimeType: z.string(),
       text: z.string(),
-    })
+    }),
   ),
 });
 

@@ -41,7 +41,9 @@ export interface StopPortForwardResult {
   message: string;
 }
 
-async function executePortForward(args: string[]): Promise<{ success: boolean; message: string; pid: number }> {
+async function executePortForward(
+  args: string[],
+): Promise<{ success: boolean; message: string; pid: number }> {
   // port_forward uses spawn (long-running process) rather than deps.kubectl,
   // so it must run the argv guard itself. Otherwise user-supplied values
   // pushed into positional slots (e.g. resourceType) can smuggle
@@ -69,7 +71,13 @@ async function executePortForward(args: string[]): Promise<{ success: boolean; m
     });
 
     child.on("error", (error) => {
-      reject(new KubectlError(`Failed to execute port-forward: ${error.message}`, "port_forward", "internal"));
+      reject(
+        new KubectlError(
+          `Failed to execute port-forward: ${error.message}`,
+          "port_forward",
+          "internal",
+        ),
+      );
     });
 
     child.on("close", (code) => {
@@ -87,7 +95,13 @@ async function executePortForward(args: string[]): Promise<{ success: boolean; m
     // Set a timeout to reject if we don't see the success message.
     setTimeout(() => {
       if (!output.includes("Forwarding from")) {
-        reject(new KubectlError("port-forwarding failed - no success message received", "port_forward", "timeout"));
+        reject(
+          new KubectlError(
+            "port-forwarding failed - no success message received",
+            "port_forward",
+            "timeout",
+          ),
+        );
       }
     }, 5000);
   });
@@ -124,10 +138,17 @@ export async function portForward(deps: Deps, args: PortForwardArgs): Promise<Po
   return { success: result.success, message: result.message, id };
 }
 
-export async function stopPortForward(deps: Deps, args: StopPortForwardArgs): Promise<StopPortForwardResult> {
+export async function stopPortForward(
+  deps: Deps,
+  args: StopPortForwardArgs,
+): Promise<StopPortForwardResult> {
   const tracked = deps.client.getPortForward(args.id);
   if (!tracked) {
-    throw new KubectlError(`Port-forward with id ${args.id} not found`, "stop_port_forward", "not_found");
+    throw new KubectlError(
+      `Port-forward with id ${args.id} not found`,
+      "stop_port_forward",
+      "not_found",
+    );
   }
 
   await tracked.server.stop();

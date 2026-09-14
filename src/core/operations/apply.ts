@@ -28,7 +28,11 @@ export interface ApplyResult {
 
 export async function apply(deps: Deps, args: ApplyArgs): Promise<ApplyResult> {
   if (!args.manifest && !args.filename) {
-    throw new KubectlError("Either manifest or filename must be provided", "kubectl_apply", "invalid_input");
+    throw new KubectlError(
+      "Either manifest or filename must be provided",
+      "kubectl_apply",
+      "invalid_input",
+    );
   }
 
   // Reject server-side filesystem reads on remote transports. Over SSE /

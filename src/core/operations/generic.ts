@@ -5,7 +5,11 @@
  * guard call from the original src/tools/kubectl-generic.ts is preserved
  * exactly, in the same order.
  */
-import { assertNoDangerousFlags, assertNoRemoteFileReads, assertNotFlagLike } from "../security/argv.js";
+import {
+  assertNoDangerousFlags,
+  assertNoRemoteFileReads,
+  assertNotFlagLike,
+} from "../security/argv.js";
 import type { Deps } from "../types.js";
 
 export interface GenericArgs {

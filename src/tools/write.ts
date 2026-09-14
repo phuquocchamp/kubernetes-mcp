@@ -8,13 +8,20 @@ import { rollout } from "../core/operations/rollout.js";
 import { scale } from "../core/operations/scale.js";
 import type { Deps } from "../core/types.js";
 import { runTool } from "./result.js";
-import { contextSchema, dryRunSchema, namespaceSchema, nameSchema, resourceTypeSchema } from "./schemas.js";
+import {
+  contextSchema,
+  dryRunSchema,
+  nameSchema,
+  namespaceSchema,
+  resourceTypeSchema,
+} from "./schemas.js";
 
 export function registerWriteTools(server: McpServer, deps: Deps): string[] {
   server.registerTool(
     "kubectl_patch",
     {
-      description: "Update field(s) of a resource using strategic merge patch, JSON merge patch, or JSON patch",
+      description:
+        "Update field(s) of a resource using strategic merge patch, JSON merge patch, or JSON patch",
       inputSchema: {
         resourceType: resourceTypeSchema,
         name: nameSchema,
@@ -65,16 +72,24 @@ export function registerWriteTools(server: McpServer, deps: Deps): string[] {
         name: nameSchema,
         namespace: namespaceSchema,
         revision: z.number().optional().describe("Revision to rollback to (for undo subcommand)."),
-        toRevision: z.number().optional().describe("Revision to roll back to (for history subcommand)."),
+        toRevision: z
+          .number()
+          .optional()
+          .describe("Revision to roll back to (for history subcommand)."),
         timeout: z
           .string()
           .optional()
           .describe("The length of time to wait before giving up (e.g., '30s', '1m', '2m30s')."),
-        watch: z.boolean().default(false).optional().describe("Watch the rollout status in real-time until completion."),
+        watch: z
+          .boolean()
+          .default(false)
+          .optional()
+          .describe("Watch the rollout status in real-time until completion."),
         context: contextSchema,
       },
     },
-    async (args) => runTool("kubectl_rollout", async () => formatRollout(await rollout(deps, args))),
+    async (args) =>
+      runTool("kubectl_rollout", async () => formatRollout(await rollout(deps, args))),
   );
 
   return ["kubectl_patch", "kubectl_scale", "kubectl_rollout"];

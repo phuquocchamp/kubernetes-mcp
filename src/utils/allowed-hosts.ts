@@ -13,9 +13,7 @@ const ALL_INTERFACES_HOSTS = new Set<string>(["0.0.0.0", "::", "::0", "0"]);
  * bracketed IPv6 spelling).
  */
 export function isAllInterfacesHost(host: string): boolean {
-  const bare = host.startsWith("[") && host.endsWith("]")
-    ? host.slice(1, -1)
-    : host;
+  const bare = host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
   return ALL_INTERFACES_HOSTS.has(bare);
 }
 

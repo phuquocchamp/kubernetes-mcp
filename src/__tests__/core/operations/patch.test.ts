@@ -28,7 +28,11 @@ describe("patch", () => {
 
   test("builds argv for patchData, writing a temp --patch-file and defaulting type/namespace", async () => {
     const deps = fakeDeps();
-    await patch(deps, { resourceType: "deployment", name: "web", patchData: { spec: { replicas: 2 } } });
+    await patch(deps, {
+      resourceType: "deployment",
+      name: "web",
+      patchData: { spec: { replicas: 2 } },
+    });
 
     expect(deps.kubectl).toHaveBeenCalledTimes(1);
     const [argv, operation] = vi.mocked(deps.kubectl).mock.calls[0];
@@ -80,7 +84,11 @@ describe("patch", () => {
   test("rejects a non-object patchData", async () => {
     const deps = fakeDeps();
     await expect(
-      patch(deps, { resourceType: "deployment", name: "web", patchData: "oops" as unknown as object }),
+      patch(deps, {
+        resourceType: "deployment",
+        name: "web",
+        patchData: "oops" as unknown as object,
+      }),
     ).rejects.toThrow(/must be a valid JSON object/);
     expect(deps.kubectl).not.toHaveBeenCalled();
   });

@@ -15,6 +15,7 @@ import { promisify } from "node:util";
 import { isRemoteTransport } from "../security/transport.js";
 import { normalizeError } from "./errors.js";
 import { assertNoRemoteFileReads, assertSafeArgv } from "./security/argv.js";
+import { withCommandSpan } from "./telemetry.js";
 import type { RunOpts } from "./types.js";
 
 const execFileAsync = promisify(execFile);
@@ -22,21 +23,28 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_BUFFER = 10 * 1024 * 1024;
 
-async function run(command: string, args: string[], operation: string, opts: RunOpts = {}): Promise<string> {
+async function run(
+  command: string,
+  args: string[],
+  operation: string,
+  opts: RunOpts = {},
+): Promise<string> {
   assertSafeArgv(args);
   if (isRemoteTransport()) assertNoRemoteFileReads(args);
 
-  try {
-    const { stdout } = await execFileAsync(command, args, {
-      encoding: "utf8",
-      timeout: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      maxBuffer: opts.maxBuffer ?? DEFAULT_MAX_BUFFER,
-      env: opts.env ?? { ...process.env, KUBECONFIG: process.env.KUBECONFIG },
-    });
-    return stdout;
-  } catch (err) {
-    throw normalizeError(err, operation);
-  }
+  return withCommandSpan(command, args, operation, async () => {
+    try {
+      const { stdout } = await execFileAsync(command, args, {
+        encoding: "utf8",
+        timeout: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+        maxBuffer: opts.maxBuffer ?? DEFAULT_MAX_BUFFER,
+        env: opts.env ?? { ...process.env, KUBECONFIG: process.env.KUBECONFIG },
+      });
+      return stdout;
+    } catch (err) {
+      throw normalizeError(err, operation);
+    }
+  });
 }
 
 /** Runs kubectl. `operation` is a short label (e.g. "kubectl_get") used only in error messages. */

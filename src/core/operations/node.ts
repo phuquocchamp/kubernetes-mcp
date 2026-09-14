@@ -36,14 +36,22 @@ interface NodeStatus {
 
 function requireNodeName(nodeName: string | undefined, operation: string): string {
   if (!nodeName) {
-    throw new KubectlError(`nodeName is required for the "${operation}" operation.`, "node_management", "invalid_input");
+    throw new KubectlError(
+      `nodeName is required for the "${operation}" operation.`,
+      "node_management",
+      "invalid_input",
+    );
   }
   assertNotFlagLike(nodeName, "nodeName");
   return nodeName;
 }
 
 async function getNodeStatus(deps: Deps, nodeName: string): Promise<NodeStatus> {
-  const raw = await deps.kubectl(["get", "node", nodeName, "-o", "json"], "node_management", NODE_OP_OPTS);
+  const raw = await deps.kubectl(
+    ["get", "node", nodeName, "-o", "json"],
+    "node_management",
+    NODE_OP_OPTS,
+  );
   return JSON.parse(raw) as NodeStatus;
 }
 
@@ -83,7 +91,16 @@ interface DrainParams {
 }
 
 async function drainNode(deps: Deps, params: DrainParams): Promise<NodeManagementResult> {
-  const { nodeName, force, gracePeriod, deleteLocalData, ignoreDaemonsets, timeout, dryRun, confirmDrain } = params;
+  const {
+    nodeName,
+    force,
+    gracePeriod,
+    deleteLocalData,
+    ignoreDaemonsets,
+    timeout,
+    dryRun,
+    confirmDrain,
+  } = params;
 
   const nodeStatus = await getNodeStatus(deps, nodeName);
   const isSchedulable = !nodeStatus.spec?.unschedulable;
@@ -122,7 +139,10 @@ async function drainNode(deps: Deps, params: DrainParams): Promise<NodeManagemen
   return { message: `Successfully drained node '${nodeName}'.\n\n${drainOutput}` };
 }
 
-export async function manageNode(deps: Deps, args: NodeManagementArgs): Promise<NodeManagementResult> {
+export async function manageNode(
+  deps: Deps,
+  args: NodeManagementArgs,
+): Promise<NodeManagementResult> {
   const {
     operation,
     nodeName,

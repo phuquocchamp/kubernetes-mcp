@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { KubectlError } from "../../../core/errors.js";
+import type { KubectlError } from "../../../core/errors.js";
 import { manageNode } from "../../../core/operations/node.js";
 import type { Deps } from "../../../core/types.js";
 
@@ -25,8 +25,18 @@ describe("manageNode", () => {
 
     const result = await manageNode(deps, { operation: "cordon", nodeName: "node-1" });
 
-    expect(kubectl).toHaveBeenNthCalledWith(1, ["get", "node", "node-1", "-o", "json"], "node_management", NODE_OP_OPTS);
-    expect(kubectl).toHaveBeenNthCalledWith(2, ["cordon", "node-1"], "node_management", NODE_OP_OPTS);
+    expect(kubectl).toHaveBeenNthCalledWith(
+      1,
+      ["get", "node", "node-1", "-o", "json"],
+      "node_management",
+      NODE_OP_OPTS,
+    );
+    expect(kubectl).toHaveBeenNthCalledWith(
+      2,
+      ["cordon", "node-1"],
+      "node_management",
+      NODE_OP_OPTS,
+    );
     expect(result.message).toContain("Successfully cordoned node 'node-1'");
   });
 
@@ -46,7 +56,12 @@ describe("manageNode", () => {
 
     const result = await manageNode(deps, { operation: "uncordon", nodeName: "node-1" });
 
-    expect(kubectl).toHaveBeenNthCalledWith(2, ["uncordon", "node-1"], "node_management", NODE_OP_OPTS);
+    expect(kubectl).toHaveBeenNthCalledWith(
+      2,
+      ["uncordon", "node-1"],
+      "node_management",
+      NODE_OP_OPTS,
+    );
     expect(result.message).toContain("Successfully uncordoned node 'node-1'");
   });
 
@@ -54,17 +69,30 @@ describe("manageNode", () => {
     const kubectl = vi.fn().mockResolvedValueOnce(nodeJson(false));
     const deps = fakeDeps(kubectl);
 
-    const result = await manageNode(deps, { operation: "drain", nodeName: "node-1", confirmDrain: false, dryRun: false });
+    const result = await manageNode(deps, {
+      operation: "drain",
+      nodeName: "node-1",
+      confirmDrain: false,
+      dryRun: false,
+    });
 
     expect(kubectl).toHaveBeenCalledTimes(1);
     expect(result.message).toContain("requires explicit confirmation");
   });
 
   test("drain with dryRun=true runs without confirmDrain and passes --dry-run=client", async () => {
-    const kubectl = vi.fn().mockResolvedValueOnce(nodeJson(false)).mockResolvedValueOnce("node/node-1 drained (dry run)");
+    const kubectl = vi
+      .fn()
+      .mockResolvedValueOnce(nodeJson(false))
+      .mockResolvedValueOnce("node/node-1 drained (dry run)");
     const deps = fakeDeps(kubectl);
 
-    const result = await manageNode(deps, { operation: "drain", nodeName: "node-1", dryRun: true, confirmDrain: false });
+    const result = await manageNode(deps, {
+      operation: "drain",
+      nodeName: "node-1",
+      dryRun: true,
+      confirmDrain: false,
+    });
 
     expect(kubectl).toHaveBeenNthCalledWith(
       2,
@@ -76,7 +104,10 @@ describe("manageNode", () => {
   });
 
   test("drain with confirmDrain=true builds full argv from force/gracePeriod/deleteLocalData/timeout options", async () => {
-    const kubectl = vi.fn().mockResolvedValueOnce(nodeJson(false)).mockResolvedValueOnce("node/node-1 drained");
+    const kubectl = vi
+      .fn()
+      .mockResolvedValueOnce(nodeJson(false))
+      .mockResolvedValueOnce("node/node-1 drained");
     const deps = fakeDeps(kubectl);
 
     const result = await manageNode(deps, {
@@ -92,7 +123,16 @@ describe("manageNode", () => {
 
     expect(kubectl).toHaveBeenNthCalledWith(
       2,
-      ["drain", "node-1", "--force", "--grace-period", "30", "--delete-local-data", "--timeout", "5m"],
+      [
+        "drain",
+        "node-1",
+        "--force",
+        "--grace-period",
+        "30",
+        "--delete-local-data",
+        "--timeout",
+        "5m",
+      ],
       "node_management",
       NODE_OP_OPTS,
     );
@@ -103,7 +143,11 @@ describe("manageNode", () => {
     const kubectl = vi.fn().mockResolvedValueOnce(nodeJson(true));
     const deps = fakeDeps(kubectl);
 
-    const result = await manageNode(deps, { operation: "drain", nodeName: "node-1", confirmDrain: true });
+    const result = await manageNode(deps, {
+      operation: "drain",
+      nodeName: "node-1",
+      confirmDrain: true,
+    });
 
     expect(kubectl).toHaveBeenCalledTimes(1);
     expect(result.message).toContain("already cordoned");
@@ -123,7 +167,9 @@ describe("manageNode", () => {
     const kubectl = vi.fn();
     const deps = fakeDeps(kubectl);
 
-    await expect(manageNode(deps, { operation: "cordon", nodeName: "--kubeconfig=/tmp/evil" })).rejects.toThrow();
+    await expect(
+      manageNode(deps, { operation: "cordon", nodeName: "--kubeconfig=/tmp/evil" }),
+    ).rejects.toThrow();
     expect(kubectl).not.toHaveBeenCalled();
   });
 });

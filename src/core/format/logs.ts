@@ -13,8 +13,16 @@ export function formatLogs(result: LogsResult): string {
     case "message":
       return JSON.stringify({ message: result.message }, null, 2);
     case "selector":
-      return JSON.stringify({ selector: result.selector, namespace: result.namespace, logs: result.logs }, null, 2);
+      return JSON.stringify(
+        { selector: result.selector, namespace: result.namespace, logs: result.logs },
+        null,
+        2,
+      );
     case "cronjob":
-      return JSON.stringify({ cronjob: result.cronjob, namespace: result.namespace, jobs: result.jobs }, null, 2);
+      return JSON.stringify(
+        { cronjob: result.cronjob, namespace: result.namespace, jobs: result.jobs },
+        null,
+        2,
+      );
   }
 }

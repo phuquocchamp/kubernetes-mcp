@@ -43,10 +43,14 @@ export interface ValidateConfigResult {
 }
 
 /** Pure — no process.exit, no I/O. Exists so it can be unit-tested directly. */
-export function validateConfig(env: NodeJS.ProcessEnv | Record<string, string | undefined>): ValidateConfigResult {
+export function validateConfig(
+  env: NodeJS.ProcessEnv | Record<string, string | undefined>,
+): ValidateConfigResult {
   const allowedToolsRaw = env.ALLOWED_TOOLS;
   const parsedPort = Number.parseInt(env.PORT ?? "3000", 10);
-  const parsedMaxBuffer = env.SPAWN_MAX_BUFFER ? Number.parseInt(env.SPAWN_MAX_BUFFER, 10) : DEFAULT_MAX_BUFFER;
+  const parsedMaxBuffer = env.SPAWN_MAX_BUFFER
+    ? Number.parseInt(env.SPAWN_MAX_BUFFER, 10)
+    : DEFAULT_MAX_BUFFER;
 
   const result = ConfigSchema.safeParse({
     allowOnlyReadonlyTools: boolEnv(env.ALLOW_ONLY_READONLY_TOOLS, false),
@@ -58,7 +62,10 @@ export function validateConfig(env: NodeJS.ProcessEnv | Record<string, string | 
           .filter(Boolean)
       : null,
     maskSecrets: boolEnv(env.MASK_SECRETS, true),
-    spawnMaxBufferBytes: Number.isFinite(parsedMaxBuffer) && parsedMaxBuffer > 0 ? parsedMaxBuffer : DEFAULT_MAX_BUFFER,
+    spawnMaxBufferBytes:
+      Number.isFinite(parsedMaxBuffer) && parsedMaxBuffer > 0
+        ? parsedMaxBuffer
+        : DEFAULT_MAX_BUFFER,
     httpAuthToken: env.MCP_AUTH_TOKEN || undefined,
     dnsRebindingProtection: boolEnv(env.DNS_REBINDING_PROTECTION, true),
     dnsRebindingAllowedHost: env.DNS_REBINDING_ALLOWED_HOST || undefined,
@@ -67,7 +74,9 @@ export function validateConfig(env: NodeJS.ProcessEnv | Record<string, string | 
   });
 
   if (!result.success) {
-    const fields = [...new Set(result.error.issues.map((issue) => issue.path.join(".")))].join(", ");
+    const fields = [...new Set(result.error.issues.map((issue) => issue.path.join(".")))].join(
+      ", ",
+    );
     return { success: false, message: `kubernetes-mcp: invalid configuration for: ${fields}` };
   }
 

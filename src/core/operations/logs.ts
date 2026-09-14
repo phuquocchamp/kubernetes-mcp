@@ -10,8 +10,8 @@
  * format.
  */
 import { getSpawnMaxBuffer } from "../../config/max-buffer.js";
-import { assertNotFlagLike } from "../security/argv.js";
 import { KubectlError } from "../errors.js";
+import { assertNotFlagLike } from "../security/argv.js";
 import type { Deps } from "../types.js";
 
 export interface LogsArgs {
@@ -33,7 +33,12 @@ export type LogsResult =
   | { kind: "pod"; name: string; logs: string }
   | { kind: "message"; message: string }
   | { kind: "selector"; selector: string; namespace: string; logs: Record<string, string> }
-  | { kind: "cronjob"; cronjob: string; namespace: string; jobs: Record<string, Record<string, string>> };
+  | {
+      kind: "cronjob";
+      cronjob: string;
+      namespace: string;
+      jobs: Record<string, Record<string, string>>;
+    };
 
 function addLogOptions(args: string[], input: LogsArgs): string[] {
   if (input.tail !== undefined) args.push(`--tail=${input.tail}`);
@@ -52,12 +57,25 @@ async function getLabelSelectorLogs(
   namespace: string,
   input: LogsArgs,
 ): Promise<LogsResult> {
-  const podsArgs = ["-n", namespace, "get", "pods", `--selector=${labelSelector}`, "-o", "jsonpath={.items[*].metadata.name}"];
-  const podsRaw = (await deps.kubectl(podsArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })).trim();
+  const podsArgs = [
+    "-n",
+    namespace,
+    "get",
+    "pods",
+    `--selector=${labelSelector}`,
+    "-o",
+    "jsonpath={.items[*].metadata.name}",
+  ];
+  const podsRaw = (
+    await deps.kubectl(podsArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })
+  ).trim();
   const pods = podsRaw ? podsRaw.split(" ") : [];
 
   if (pods.length === 0 || (pods.length === 1 && pods[0] === "")) {
-    return { kind: "message", message: `No pods found with label selector "${labelSelector}" in namespace ${namespace}` };
+    return {
+      kind: "message",
+      message: `No pods found with label selector "${labelSelector}" in namespace ${namespace}`,
+    };
   }
 
   const logsMap: Record<string, string> = {};
@@ -68,7 +86,9 @@ async function getLabelSelectorLogs(
     podArgs = addLogOptions(podArgs, input);
 
     try {
-      logsMap[pod] = await deps.kubectl(podArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() });
+      logsMap[pod] = await deps.kubectl(podArgs, "kubectl_logs", {
+        maxBuffer: getSpawnMaxBuffer(),
+      });
     } catch (err) {
       logsMap[pod] = `Error: ${err instanceof Error ? err.message : String(err)}`;
     }
@@ -93,8 +113,18 @@ export async function logs(deps: Deps, args: LogsArgs): Promise<LogsResult> {
   }
 
   if (resourceType === "deployment") {
-    const selectorArgs = ["-n", namespace, "get", "deployment", name, "-o", "jsonpath={.spec.selector.matchLabels}"];
-    const selectorJson = (await deps.kubectl(selectorArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })).trim();
+    const selectorArgs = [
+      "-n",
+      namespace,
+      "get",
+      "deployment",
+      name,
+      "-o",
+      "jsonpath={.spec.selector.matchLabels}",
+    ];
+    const selectorJson = (
+      await deps.kubectl(selectorArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })
+    ).trim();
     const selector = JSON.parse(selectorJson) as Record<string, string>;
     const labelSelector = Object.entries(selector)
       .map(([key, value]) => `${key}=${value}`)
@@ -108,12 +138,25 @@ export async function logs(deps: Deps, args: LogsArgs): Promise<LogsResult> {
   }
 
   if (resourceType === "cronjob") {
-    const jobsArgs = ["-n", namespace, "get", "jobs", `--selector=job-name=${name}`, "-o", "jsonpath={.items[*].metadata.name}"];
-    const jobsRaw = (await deps.kubectl(jobsArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })).trim();
+    const jobsArgs = [
+      "-n",
+      namespace,
+      "get",
+      "jobs",
+      `--selector=job-name=${name}`,
+      "-o",
+      "jsonpath={.items[*].metadata.name}",
+    ];
+    const jobsRaw = (
+      await deps.kubectl(jobsArgs, "kubectl_logs", { maxBuffer: getSpawnMaxBuffer() })
+    ).trim();
     const jobs = jobsRaw ? jobsRaw.split(" ") : [];
 
     if (jobs.length === 0 || (jobs.length === 1 && jobs[0] === "")) {
-      return { kind: "message", message: `No jobs found for cronjob ${name} in namespace ${namespace}` };
+      return {
+        kind: "message",
+        message: `No jobs found for cronjob ${name} in namespace ${namespace}`,
+      };
     }
 
     const allJobLogs: Record<string, Record<string, string>> = {};
@@ -129,5 +172,9 @@ export async function logs(deps: Deps, args: LogsArgs): Promise<LogsResult> {
     return getLabelSelectorLogs(deps, args.labelSelector, namespace, args);
   }
 
-  throw new KubectlError(`Unsupported resource type: ${resourceType}`, "kubectl_logs", "invalid_input");
+  throw new KubectlError(
+    `Unsupported resource type: ${resourceType}`,
+    "kubectl_logs",
+    "invalid_input",
+  );
 }

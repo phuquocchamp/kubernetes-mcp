@@ -38,7 +38,10 @@ describe("apply", () => {
     expect(argv[0]).toBe("apply");
     expect(argv).toContain("-f");
     expect(argv).toEqual(expect.arrayContaining(["-n", "team-a"]));
-    expect(writeSpy).toHaveBeenCalledWith(expect.stringMatching(/manifest-\d+\.yaml$/), "kind: Pod");
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/manifest-\d+\.yaml$/),
+      "kind: Pod",
+    );
     expect(unlinkSpy).toHaveBeenCalled();
     expect(result.raw).toBe("applied\n");
   });
@@ -56,7 +59,17 @@ describe("apply", () => {
 
     expect(writeSpy).not.toHaveBeenCalled();
     const [argv] = (deps.kubectl as any).mock.calls[0];
-    expect(argv).toEqual(["apply", "-f", "/tmp/manifest.yaml", "-n", "default", "--dry-run=client", "--force", "--context", "prod"]);
+    expect(argv).toEqual([
+      "apply",
+      "-f",
+      "/tmp/manifest.yaml",
+      "-n",
+      "default",
+      "--dry-run=client",
+      "--force",
+      "--context",
+      "prod",
+    ]);
   });
 
   test("rejects when neither manifest nor filename is provided", async () => {
@@ -69,7 +82,9 @@ describe("apply", () => {
     process.env.ENABLE_UNSAFE_SSE_TRANSPORT = "true";
     const deps = fakeDeps();
 
-    await expect(apply(deps, { filename: "/etc/kube/config" })).rejects.toMatchObject({ code: "invalid_input" });
+    await expect(apply(deps, { filename: "/etc/kube/config" })).rejects.toMatchObject({
+      code: "invalid_input",
+    });
     expect(deps.kubectl).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,9 @@
-import express from "express";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import http from "http";
+import express from "express";
+import type http from "http";
+import { buildDefaultAllowedHosts, isAllInterfacesHost } from "./allowed-hosts.js";
 import { createAuthMiddleware, isAuthEnabled } from "./auth.js";
-import {
-  buildDefaultAllowedHosts,
-  isAllInterfacesHost,
-} from "./allowed-hosts.js";
 
 export function startStreamableHTTPServer(server: Server): http.Server {
   const app = express();
@@ -16,8 +13,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
   const authMiddleware = createAuthMiddleware();
 
   // DNS rebinding protection is enabled by default. Set DNS_REBINDING_PROTECTION=false to disable.
-  const enableDnsRebindingProtection =
-    process.env.DNS_REBINDING_PROTECTION !== "false";
+  const enableDnsRebindingProtection = process.env.DNS_REBINDING_PROTECTION !== "false";
 
   const host = process.env.HOST || "localhost";
 
@@ -30,11 +26,11 @@ export function startStreamableHTTPServer(server: Server): http.Server {
 
   // Warn when binding to all interfaces with DNS rebinding protection disabled
   if (!enableDnsRebindingProtection && isAllInterfacesHost(host)) {
-    console.warn(
+    console.error(
       "WARNING: DNS rebinding protection is disabled while HOST is set to " +
         `'${host}'. This exposes the MCP server to DNS rebinding attacks ` +
         "from any browser on the network. Set DNS_REBINDING_PROTECTION=true " +
-        "(the default) or restrict HOST to 'localhost' / '127.0.0.1'."
+        "(the default) or restrict HOST to 'localhost' / '127.0.0.1'.",
     );
   }
 
@@ -46,12 +42,12 @@ export function startStreamableHTTPServer(server: Server): http.Server {
     isAllInterfacesHost(host) &&
     !process.env.DNS_REBINDING_ALLOWED_HOST
   ) {
-    console.warn(
+    console.error(
       `NOTE: HOST is set to '${host}' (all interfaces) and DNS rebinding ` +
         "protection is enabled, so only requests with a localhost Host header " +
         "are accepted. Clients reaching this server under another hostname " +
         "(a Kubernetes Service name, an ingress host) must be allowed by " +
-        "setting DNS_REBINDING_ALLOWED_HOST to that hostname."
+        "setting DNS_REBINDING_ALLOWED_HOST to that hostname.",
     );
   }
 
@@ -61,12 +57,11 @@ export function startStreamableHTTPServer(server: Server): http.Server {
     // when multiple clients connect concurrently.
 
     try {
-      const transport: StreamableHTTPServerTransport =
-        new StreamableHTTPServerTransport({
-          sessionIdGenerator: undefined,
-          enableDnsRebindingProtection,
-          allowedHosts,
-        });
+      const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableDnsRebindingProtection,
+        allowedHosts,
+      });
       res.on("close", () => {
         transport.close();
         // Note: server.close() should NOT be called here as server is shared
@@ -102,7 +97,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
           message: "Method not allowed.",
         },
         id: null,
-      })
+      }),
     );
   });
 
@@ -117,7 +112,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
           message: "Method not allowed.",
         },
         id: null,
-      })
+      }),
     );
   });
 
@@ -138,7 +133,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
       res.status(503).json({
         status: "not ready",
         reason: "Server initialization incomplete",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -150,12 +145,10 @@ export function startStreamableHTTPServer(server: Server): http.Server {
 
   const httpServer = app.listen(port, host, () => {
     console.error(
-      `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/mcp`
+      `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/mcp`,
     );
     if (isAuthEnabled()) {
-      console.error(
-        "Authentication enabled: X-MCP-AUTH header required for all MCP requests"
-      );
+      console.error("Authentication enabled: X-MCP-AUTH header required for all MCP requests");
     }
   });
   return httpServer;
