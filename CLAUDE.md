@@ -9,11 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run build` - Compile TypeScript to dist/ and make executables
 - `bun run dev` - Start TypeScript compiler in watch mode for development
 - `bun run start` - Run the compiled server from dist/index.js
-- `bun run test` - Run all tests using Vitest
+- `bun run test` - Run the unit test project (no cluster required)
 
 ### Testing and Quality
 
-- `bun run test` - Execute the complete test suite with custom sequencer (kubectl tests run last)
+- `bun run test` - Runs the **unit** Vitest project only: `src/__tests__/**` plus the handful of cluster-free `tests/*.unit.test.ts` files. This is the suite CI and every PR must keep green; it needs no Kubernetes cluster and no kubectl/helm binaries.
+- `bun run test:e2e` - Runs the **e2e** Vitest project: the rest of `tests/*.test.ts`. These require an active Kubernetes cluster connection (custom sequencer runs `kubectl.test.ts` last since it modifies cluster state) and are not expected to pass without one.
+- `bun run test:all` - Runs both projects together (equivalent to the old bare `vitest run`).
 - Tests have 120s timeout and 60s hook timeout due to Kubernetes operations
 - Use `npx @modelcontextprotocol/inspector node dist/index.js` for local testing with Inspector
 - Always run single test based on with area you are working on. running all tests will take a long time.
@@ -31,22 +33,24 @@ This is an MCP (Model Context Protocol) server that provides Kubernetes cluster 
 
 **KubernetesManager** (`src/utils/kubernetes-manager.ts`): Central class managing Kubernetes API connections, resource tracking, port forwards, and watches. Handles kubeconfig loading from multiple sources in priority order.
 
-**Tool Structure**: Each Kubernetes operation is implemented as a separate tool in `src/tools/`, with corresponding Zod schemas for validation. Tools are divided into:
+**Tool Structure**: Each Kubernetes operation is split across three layers (the `jenkins-mcp` pattern — see `docs/REFACTOR-PATTERN.md` for the full contract and a worked example):
 
-- kubectl operations (get, describe, apply, delete, create, etc.)
-- Helm operations (install, upgrade, uninstall charts)
-- Specialized operations (port forwarding, scaling, rollouts)
+- `src/core/operations/*.ts` — pure logic: builds the kubectl/helm argv and parses the result. No MCP or Zod knowledge; takes a `Deps` object (`kubectl`, `helm`, `client`, `config`) so it can be unit-tested with fakes, no live cluster or process spawn.
+- `src/core/format/*.ts` — turns an operation's result into the text the tool returns.
+- `src/tools/*.ts` — thin `registerTool` adapters (Zod schemas + wiring) that call into `core/operations` and `core/format`. Each file exports a `registerXTools(server, deps): string[]` registrar, listed in `REGISTRARS` in `src/server.ts`.
+
+Tools are divided into: kubectl operations (get, describe, apply, delete, create, etc.), Helm operations (install, upgrade, uninstall charts), and specialized operations (port forwarding, scaling, rollouts).
 
 **Resource Handlers** (`src/resources/handlers.ts`): Manage MCP resource endpoints for dynamic data retrieval.
 
-**Configuration System** (`src/config/`): Contains schemas and templates for deployments, namespaces, containers, and cleanup operations.
+**Configuration System** (`src/core/config.ts`): Zod schema, validation and loading for all server config (tool gating, secret masking, transport/DNS-rebinding options, etc.), consumed as `deps.config` by operations.
 
 ### Key Architecture Patterns
 
-- **Tool Filtering**: Non-destructive mode dynamically removes destructive tools based on `ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS` environment variable
-- **Unified kubectl API**: Consistent interface across all kubectl operations with standardized error handling
+- **Tool Gating**: `src/server.ts` wraps `McpServer` in a `Proxy` (`gatedServer`) that intercepts `.registerTool` — a forbidden tool (per `ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS`, `ALLOW_ONLY_READONLY_TOOLS`, or `ALLOWED_TOOLS`) is **never registered**, not registered-then-refused. `isToolAllowed`/`findUnknownToolNames` in the same file are the source of truth; `src/__tests__/mcp/safety.test.ts` asserts the exact tool-name sets this produces.
+- **Unified kubectl API**: `core/kubectl.ts` (`runKubectl`/`runHelm`) is the single async `execFile` choke point — argv-injection guards (`security/kubectl-flags.ts`, re-exported at `core/security/argv.ts`) and OpenTelemetry span instrumentation (`core/telemetry.ts`) both live here, not scattered per-tool.
 - **Resource Tracking**: All created resources are tracked for cleanup capabilities
-- **Transport Flexibility**: Supports both StdioTransport and SSE transport for different integration scenarios
+- **Transport Flexibility**: Supports both StdioTransport and SSE/Streamable HTTP transport for different integration scenarios. Note: `createServer` (`src/server.ts`) currently builds its own `KubernetesManager` internally rather than taking one as a parameter — fine for the current one-process-per-connection stdio/CLI usage, but a future per-session HTTP server would get a fresh manager per session. Take the manager as a parameter if/when that's built.
 
 ### Request Flow
 
@@ -60,17 +64,19 @@ This is an MCP (Model Context Protocol) server that provides Kubernetes cluster 
 
 ### Adding New Tools
 
-- Create new tool file in `src/tools/` with Zod schema export
-- Import and register in `src/index.ts` main server setup
-- Add to destructive/non-destructive filtering logic as appropriate
-- Include comprehensive error handling for Kubernetes API failures
+Follow `docs/REFACTOR-PATTERN.md`. In short:
+
+- Add the operation to `src/core/operations/<name>.ts` (pure argv-building + parsing, takes `Deps`) and, if needed, a formatter in `src/core/format/<name>.ts`.
+- Register it with a Zod schema in the relevant `src/tools/*.ts` registrar (or add a new registrar and list it in `REGISTRARS` in `src/server.ts`).
+- Add its name to `ALL_TOOL_NAMES` in `src/server.ts`, and to `READONLY_TOOL_NAMES`/`DESTRUCTIVE_TOOL_NAMES` there if it's read-only or destructive — that's what drives the gating in `isToolAllowed`.
+- Write a unit test for the operation under `src/__tests__/core/operations/` using a `fakeDeps()` helper (see existing files for the pattern) — no live cluster needed.
+- Include comprehensive error handling for Kubernetes API failures (`core/errors.ts`'s `normalizeError`/`KubectlError`).
 
 ### Testing Strategy
 
-- Unit tests focus on tool functionality and schema validation
-- Integration tests verify actual Kubernetes operations
-- Custom test sequencer ensures kubectl tests run last (they modify cluster state)
-- Tests require active Kubernetes cluster connection
+- Unit tests (`bun run test`) cover operation logic and schema validation against faked `Deps` — no cluster needed. This is the suite that must stay green.
+- E2E tests (`bun run test:e2e`) verify actual Kubernetes operations against a live cluster; custom test sequencer ensures `kubectl.test.ts` runs last (it modifies cluster state).
+- See `vitest.config.ts` for the unit/e2e project split (by `tests/**/*.unit.test.ts` naming vs. everything else in `tests/`).
 
 ### Configuration Handling
 

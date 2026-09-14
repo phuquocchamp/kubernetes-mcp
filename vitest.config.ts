@@ -33,5 +33,25 @@ export default defineConfig({
     sequence: {
       sequencer: KubectlSequencer,
     },
+    // Split so `test` runs green without a cluster: unit-only tests
+    // (src/__tests__ plus the *.unit.test.ts files still in tests/) vs.
+    // e2e tests that need a live Kubernetes cluster per CLAUDE.md.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["src/__tests__/**/*.test.ts", "tests/**/*.unit.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "e2e",
+          include: ["tests/**/*.test.ts"],
+          exclude: ["tests/**/*.unit.test.ts"],
+        },
+      },
+    ],
   },
 });
