@@ -1,6 +1,16 @@
-import { expect, test, describe, beforeEach, afterEach } from "vitest";
+import { expect, test, describe, beforeEach, afterEach, vi } from "vitest";
 import { assertNoRemoteFileReads } from "../src/security/kubectl-flags.js";
-import { kubectlGeneric } from "../src/tools/kubectl-generic.js";
+import { generic } from "../src/core/operations/generic.js";
+import type { Deps } from "../src/core/types.js";
+
+function fakeDeps(): Deps {
+  return {
+    kubectl: vi.fn(async () => "ok\n"),
+    helm: vi.fn(async () => ""),
+    client: {} as Deps["client"],
+    config: {} as Deps["config"],
+  };
+}
 
 // kubectl_generic hands the caller a free-form kubectl argv, so the
 // per-parameter path guards the structured tools use (`filename`, `fromFile`,
@@ -15,8 +25,7 @@ const TRANSPORT_ENV = [
   "ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT",
 ] as const;
 
-// The guard runs before any kubectl execution, so a stub manager is fine.
-const manager = {} as any;
+
 
 describe("assertNoRemoteFileReads", () => {
   let saved: Record<string, string | undefined>;
@@ -119,7 +128,7 @@ describe("kubectl_generic rejects server-side file reads on remote transports", 
     test(`rejects --from-file passed through args under ${envVar}`, async () => {
       process.env[envVar] = "true";
       await expect(
-        kubectlGeneric(manager, {
+        generic(fakeDeps(), {
           command: "create",
           resourceType: "configmap",
           name: "leak",
@@ -132,7 +141,7 @@ describe("kubectl_generic rejects server-side file reads on remote transports", 
     test(`rejects --from-file passed through the flags object under ${envVar}`, async () => {
       process.env[envVar] = "true";
       await expect(
-        kubectlGeneric(manager, {
+        generic(fakeDeps(), {
           command: "create",
           resourceType: "configmap",
           name: "leak",

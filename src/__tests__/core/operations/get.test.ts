@@ -110,6 +110,38 @@ describe("get operation", () => {
     );
   });
 
+  // Regression: the custom-columns spec was once built with literal single
+  // quotes ("-o 'custom-columns=...'"), which is shell syntax that kubectl
+  // (run via execFile, no shell) received verbatim and rejected as an
+  // unrecognized output format. Ported from the pre-refactor
+  // tests/kubectl-get.unit.test.ts.
+  test("custom output builds an unquoted custom-columns argument", async () => {
+    const { deps, kubectl } = fakeDeps("NAME  NAMESPACE  STATUS  AGE\n");
+
+    await get(deps, { resourceType: "pods", namespace: "kube-system", output: "custom" });
+
+    const argv = kubectl.mock.calls[0][0] as string[];
+    const outFlag = argv.indexOf("-o");
+    expect(outFlag).toBeGreaterThan(-1);
+    expect(argv[outFlag + 1]).toBe(
+      "custom-columns=NAME:.metadata.name,NAMESPACE:.metadata.namespace,STATUS:.status.phase,AGE:.metadata.creationTimestamp",
+    );
+    for (const tok of argv) expect(tok).not.toContain("'");
+  });
+
+  test("custom output for events uses the event columns, unquoted", async () => {
+    const { deps, kubectl } = fakeDeps("LASTSEEN  TYPE  REASON  OBJECT  MESSAGE\n");
+
+    await get(deps, { resourceType: "events", output: "custom" });
+
+    const argv = kubectl.mock.calls[0][0] as string[];
+    const outFlag = argv.indexOf("-o");
+    expect(argv[outFlag + 1]).toBe(
+      "custom-columns=LASTSEEN:.lastTimestamp,TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message",
+    );
+    for (const tok of argv) expect(tok).not.toContain("'");
+  });
+
   test("rejects a flag-like resourceType", async () => {
     const { deps, kubectl } = fakeDeps();
 

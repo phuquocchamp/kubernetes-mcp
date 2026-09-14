@@ -163,6 +163,52 @@ describe("installHelmChart", () => {
       }),
     ).rejects.toThrow(/repo/);
   });
+
+  // On remote (SSE / Streamable HTTP) transports, valuesFile resolves on the
+  // MCP server host rather than the client's machine, so any client that can
+  // reach the endpoint could read arbitrary server files (e.g. /etc/passwd).
+  // Ported from the pre-refactor tests/remote-transport-path-reads.unit.test.ts.
+  for (const envVar of [
+    "ENABLE_UNSAFE_SSE_TRANSPORT",
+    "ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT",
+  ] as const) {
+    test(`rejects valuesFile under ${envVar}`, async () => {
+      const saved = process.env[envVar];
+      process.env[envVar] = "true";
+      try {
+        await expect(
+          installHelmChart(deps, {
+            name: "leak",
+            chart: "nginx",
+            namespace: "default",
+            valuesFile: "/etc/passwd",
+          }),
+        ).rejects.toThrow(/'valuesFile'.*disabled on remote/s);
+      } finally {
+        if (saved === undefined) delete process.env[envVar];
+        else process.env[envVar] = saved;
+      }
+    });
+
+    test(`rejects valuesFile in template mode under ${envVar}`, async () => {
+      const saved = process.env[envVar];
+      process.env[envVar] = "true";
+      try {
+        await expect(
+          installHelmChart(deps, {
+            name: "leak",
+            chart: "nginx",
+            namespace: "default",
+            useTemplate: true,
+            valuesFile: "/etc/passwd",
+          }),
+        ).rejects.toThrow(/'valuesFile'.*disabled on remote/s);
+      } finally {
+        if (saved === undefined) delete process.env[envVar];
+        else process.env[envVar] = saved;
+      }
+    });
+  }
 });
 
 describe("upgradeHelmChart", () => {
@@ -205,6 +251,29 @@ describe("upgradeHelmChart", () => {
     ).rejects.toThrow(McpError);
     expect(deps.helm).not.toHaveBeenCalled();
   });
+
+  for (const envVar of [
+    "ENABLE_UNSAFE_SSE_TRANSPORT",
+    "ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT",
+  ] as const) {
+    test(`rejects valuesFile under ${envVar}`, async () => {
+      const saved = process.env[envVar];
+      process.env[envVar] = "true";
+      try {
+        await expect(
+          upgradeHelmChart(deps, {
+            name: "leak",
+            chart: "nginx",
+            namespace: "default",
+            valuesFile: "/etc/passwd",
+          }),
+        ).rejects.toThrow(/'valuesFile'.*disabled on remote/s);
+      } finally {
+        if (saved === undefined) delete process.env[envVar];
+        else process.env[envVar] = saved;
+      }
+    });
+  }
 });
 
 describe("uninstallHelmChart", () => {

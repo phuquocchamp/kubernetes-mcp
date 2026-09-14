@@ -1,10 +1,11 @@
-import { expect, test, describe, beforeEach, afterEach } from "vitest";
+import { expect, test, describe, beforeEach, afterEach, vi } from "vitest";
 import { assertSafeArgv } from "../src/security/kubectl-flags.js";
-import { kubectlGet } from "../src/tools/kubectl-get.js";
-import { kubectlDescribe } from "../src/tools/kubectl-describe.js";
-import { kubectlDelete } from "../src/tools/kubectl-delete.js";
-import { kubectlScale } from "../src/tools/kubectl-scale.js";
-import { kubectlGeneric } from "../src/tools/kubectl-generic.js";
+import { get } from "../src/core/operations/get.js";
+import { describe as describeResource } from "../src/core/operations/describe.js";
+import { deleteResource } from "../src/core/operations/delete.js";
+import { scale } from "../src/core/operations/scale.js";
+import { generic } from "../src/core/operations/generic.js";
+import type { Deps } from "../src/core/types.js";
 
 // kubectl's pflag parser treats any "-"-prefixed token as a flag wherever it
 // sits, so a resource type or name pushed into a bare positional slot is a flag
@@ -16,8 +17,16 @@ import { kubectlGeneric } from "../src/tools/kubectl-generic.js";
 // file-reading output formats are refused anywhere in the argv, on every
 // transport, since no tool ever emits one.
 
-// The guards run before any kubectl execution, so a stub manager is fine.
-const manager = {} as any;
+// The guards run before any kubectl execution, so a fake kubectl runner
+// (never expected to be called) is fine.
+function fakeDeps(): Deps {
+  return {
+    kubectl: vi.fn(async () => "ok\n"),
+    helm: vi.fn(async () => ""),
+    client: {} as Deps["client"],
+    config: {} as Deps["config"],
+  };
+}
 
 const INJECTED = "-o=go-template-file=/root/.kube/config";
 
@@ -57,7 +66,7 @@ describe("assertSafeArgv rejects file-reading output formats", () => {
   });
 });
 
-describe("tools refuse flag-shaped positional operands", () => {
+describe("operations refuse flag-shaped positional operands", () => {
   // The read primitive needs no cluster and no remote transport, so these are
   // asserted under plain stdio.
   const TRANSPORT_ENV = [
@@ -87,53 +96,42 @@ describe("tools refuse flag-shaped positional operands", () => {
     // An `output` outside the documented set emits no trailing -o of its own,
     // which is what makes the operand slot worth guarding directly.
     await expect(
-      kubectlGet(manager, {
-        resourceType: "configmaps",
-        name: INJECTED,
-        output: "raw",
-      })
+      get(fakeDeps(), { resourceType: "configmaps", name: INJECTED, output: "raw" })
     ).rejects.toThrow(flagLike);
   });
 
   test("kubectl_get rejects a flag-shaped resourceType", async () => {
     await expect(
-      kubectlGet(manager, { resourceType: INJECTED, output: "raw" })
+      get(fakeDeps(), { resourceType: INJECTED, output: "raw" })
     ).rejects.toThrow(flagLike);
   });
 
   test("kubectl_describe rejects a flag-shaped name", async () => {
     await expect(
-      kubectlDescribe(manager, { resourceType: "configmaps", name: INJECTED })
+      describeResource(fakeDeps(), { resourceType: "configmaps", name: INJECTED })
     ).rejects.toThrow(flagLike);
   });
 
   test("kubectl_delete rejects a flag-shaped name", async () => {
     await expect(
-      kubectlDelete(manager, { resourceType: "configmaps", name: INJECTED })
+      deleteResource(fakeDeps(), { resourceType: "configmaps", name: INJECTED })
     ).rejects.toThrow(flagLike);
   });
 
   test("kubectl_scale rejects a flag-shaped name", async () => {
-    // kubectl_scale reports errors in its result payload rather than throwing.
-    const result: any = await kubectlScale(manager, {
-      name: INJECTED,
-      replicas: 1,
-    });
-    const payload = JSON.parse(result.content[0].text);
-    expect(payload.success).toBe(false);
-    expect(payload.message).toMatch(flagLike);
+    // The converted operation throws directly rather than the old tool's
+    // {success:false} result payload — see core/operations/scale.ts.
+    await expect(scale(fakeDeps(), { name: INJECTED, replicas: 1 })).rejects.toThrow(flagLike);
   });
 
   test("kubectl_generic rejects a flag-shaped resourceType", async () => {
     await expect(
-      kubectlGeneric(manager, { command: "get", resourceType: INJECTED })
+      generic(fakeDeps(), { command: "get", resourceType: INJECTED })
     ).rejects.toThrow(flagLike);
   });
 
   test("kubectl_generic rejects a flag-shaped command", async () => {
-    await expect(
-      kubectlGeneric(manager, { command: INJECTED })
-    ).rejects.toThrow(flagLike);
+    await expect(generic(fakeDeps(), { command: INJECTED })).rejects.toThrow(flagLike);
   });
 
   test("kubectl_generic still allows flags in the args array", () => {

@@ -32,6 +32,20 @@ describe("logs operation", () => {
     expect(result).toEqual({ kind: "pod", name: "my-pod", logs: "pod log output" });
   });
 
+  // Regression: resourceType omitted must not crash on `.toLowerCase()` — a
+  // caller can omit it at the MCP boundary even though the type is
+  // non-optional. Ported from the pre-refactor tests/kubectl-logs.unit.test.ts.
+  test("defaults to pod when resourceType is omitted (toLowerCase regression)", async () => {
+    const { deps, kubectl } = fakeDeps(() => "pod log output");
+
+    const result = await logs(deps, { name: "my-pod" } as unknown as Parameters<typeof logs>[1]);
+
+    expect(result).toEqual({ kind: "pod", name: "my-pod", logs: "pod log output" });
+    expect(kubectl).toHaveBeenCalledWith(["-n", "default", "logs", "my-pod"], "kubectl_logs", {
+      maxBuffer: getSpawnMaxBuffer(),
+    });
+  });
+
   test("adds container, tail, since, timestamps, previous, follow and context flags for a pod", async () => {
     const { deps, kubectl } = fakeDeps(() => "logs");
 

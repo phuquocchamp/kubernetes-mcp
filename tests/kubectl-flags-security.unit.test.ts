@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeEach, afterEach } from "vitest";
+import { expect, test, describe, beforeEach, afterEach, vi } from "vitest";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import {
   assertNoDangerousFlags,
@@ -6,10 +6,23 @@ import {
   assertSafeArgv,
   execFileSyncSafe,
 } from "../src/security/kubectl-flags.js";
-import { kubectlGeneric } from "../src/tools/kubectl-generic.js";
-import { kubectlGet } from "../src/tools/kubectl-get.js";
-import { startPortForward } from "../src/tools/port_forward.js";
-import { KubernetesManager } from "../src/utils/kubernetes-manager.js";
+import { generic } from "../src/core/operations/generic.js";
+import { get } from "../src/core/operations/get.js";
+import { portForward } from "../src/core/operations/port-forward.js";
+import type { Deps } from "../src/core/types.js";
+
+// The guards this file exercises (assertNoDangerousFlags, assertNotFlagLike,
+// assertSafeArgv, from src/security/kubectl-flags.ts) run inside each
+// operation before deps.kubectl is ever touched, so a fake runner (never
+// expected to be called for a rejected payload) is sufficient throughout.
+function fakeDeps(): Deps {
+  return {
+    kubectl: vi.fn(async () => "ok\n"),
+    helm: vi.fn(async () => ""),
+    client: {} as Deps["client"],
+    config: {} as Deps["config"],
+  };
+}
 
 describe("assertNoDangerousFlags", () => {
   const originalEnv = process.env.ALLOW_KUBECTL_UNSAFE_FLAGS;
@@ -223,10 +236,9 @@ describe("assertNoDangerousFlags", () => {
 });
 
 describe("kubectl_generic refuses dangerous flags before executing kubectl", () => {
-  // Sentinel: if kubectl were invoked we would see a real kubectl error
-  // ("Failed to execute kubectl command..."). We assert we instead get the
-  // denylist error, proving the guard runs before execFileSync.
-  const stubManager = {} as KubernetesManager;
+  // Sentinel: if kubectl were invoked, deps.kubectl (a mock) would resolve
+  // instead of the guard throwing first — the assertion proves the denylist
+  // error fires before any command is built/run.
   const originalEnv = process.env.ALLOW_KUBECTL_UNSAFE_FLAGS;
 
   beforeEach(() => {
@@ -243,7 +255,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("blocks the exact PoC payload (--server + --insecure-skip-tls-verify)", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         flags: {
@@ -256,7 +268,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("blocks dangerous flag smuggled through args", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         args: ["--server=https://attacker.example.com"],
@@ -266,7 +278,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("blocks attached short-flag form '-sURL' smuggled through args", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         args: ["-shttp://attacker.example.com"],
@@ -276,7 +288,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("blocks a short-flag cluster hiding -s in args", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         args: ["-Ashttp://attacker.example.com"],
@@ -286,7 +298,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("blocks underscore spelling of --insecure-skip-tls-verify", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         flags: { insecure_skip_tls_verify: "true" },
@@ -296,7 +308,7 @@ describe("kubectl_generic refuses dangerous flags before executing kubectl", () 
 
   test("error code is InvalidParams (not InternalError)", async () => {
     try {
-      await kubectlGeneric(stubManager, {
+      await generic(fakeDeps(), {
         command: "get",
         flags: { token: "x" },
       });
@@ -559,15 +571,13 @@ describe("sibling tools refuse the positional flag-injection PoC", () => {
   // push user input (name, resourceType, ...) into bare positional argv slots,
   // so the report's `name: "--server=..."` payload reached kubectl. The shared
   // execFileSyncSafe wrapper must now block it before kubectl is invoked.
-  const stubManager = {} as KubernetesManager;
-
   beforeEach(() => {
     delete process.env.ALLOW_KUBECTL_UNSAFE_FLAGS;
   });
 
   test("kubectl_get blocks name='--server=...' (exact report PoC)", async () => {
     await expect(
-      kubectlGet(stubManager, {
+      get(fakeDeps(), {
         resourceType: "pods",
         name: "--server=https://127.0.0.1:19012",
         namespace: "default",
@@ -577,7 +587,7 @@ describe("sibling tools refuse the positional flag-injection PoC", () => {
 
   test("kubectl_generic blocks name='--server=...' (positional bypass)", async () => {
     await expect(
-      kubectlGeneric(stubManager, {
+      generic(fakeDeps(), {
         command: "get",
         resourceType: "pods",
         name: "--server=https://attacker.example.com",
@@ -591,7 +601,7 @@ describe("sibling tools refuse the positional flag-injection PoC", () => {
   // like resourceType="--server=..." would otherwise redirect kubectl.
   test("port_forward blocks resourceType='--server=...' before spawning", async () => {
     await expect(
-      startPortForward(stubManager, {
+      portForward(fakeDeps(), {
         resourceType: "--server=https://127.0.0.1:19099",
         resourceName: "web",
         localPort: 8080,
@@ -603,7 +613,7 @@ describe("sibling tools refuse the positional flag-injection PoC", () => {
 
   test("port_forward rejection is an McpError with InvalidParams code", async () => {
     try {
-      await startPortForward(stubManager, {
+      await portForward(fakeDeps(), {
         resourceType: "--server=https://attacker",
         resourceName: "web",
         localPort: 8080,
