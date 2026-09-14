@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
+import { KubectlError } from "../../../core/errors.js";
 import { execInPod } from "../../../core/operations/exec.js";
 import type { Deps } from "../../../core/types.js";
 
@@ -77,5 +78,30 @@ describe("execInPod", () => {
       execInPod(deps, { name: "web", command: "ls -la" as unknown as string[] }),
     ).rejects.toThrow();
     expect(deps.kubectl).not.toHaveBeenCalled();
+  });
+
+  test("a non-zero exit from the in-pod command returns combined stdout/stderr instead of throwing", async () => {
+    const deps = fakeDeps(async () => {
+      throw new KubectlError(
+        '"exec_in_pod" failed: some error',
+        "exec_in_pod",
+        "kubectl_failed",
+        undefined,
+        "partial diagnostic output\n",
+        "some error\n",
+        1,
+      );
+    });
+    const result = await execInPod(deps, { name: "web", command: ["false"] });
+    expect(result.output).toBe(
+      "Command exited with code 1\n--- stdout ---\npartial diagnostic output\n\n--- stderr ---\nsome error\n",
+    );
+  });
+
+  test("a genuine connection/timeout failure (no exitCode) still throws", async () => {
+    const deps = fakeDeps(async () => {
+      throw new KubectlError('Timed out running "exec_in_pod".', "exec_in_pod", "timeout");
+    });
+    await expect(execInPod(deps, { name: "web", command: ["ls"] })).rejects.toThrow(KubectlError);
   });
 });

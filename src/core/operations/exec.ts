@@ -6,20 +6,17 @@
  * checked again here as defense in depth); this rules out shell
  * interpretation the same way the old execFileSyncSafe-based tool did.
  *
- * SIMPLIFICATION vs the original: the old tool used execFileSync directly
- * and, on a non-zero exit from the command inside the pod, returned the
- * captured stdout + stderr + exit code as a normal (non-error) result
- * instead of throwing, so partial output from a command that printed
- * diagnostics and then exited 1 was not discarded. deps.kubectl
- * (core/kubectl.ts) always normalizes a failure into a KubectlError via
- * normalizeError() before it reaches this file, and that error carries
- * only a classified message derived from stderr — the child's stdout is
- * not threaded through. So a non-zero exit here now surfaces as a
- * KubectlError (formatted by runTool) rather than as captured stdout/stderr
- * text. Preserving the original behavior would require deps.kubectl itself
- * to expose raw stdout on failure, which is out of scope for this
- * operation file (core/kubectl.ts is explicitly not-to-touch). Flagged in
- * the final report for the integrator.
+ * A non-zero exit from the command running INSIDE the pod is a normal
+ * outcome of running commands, not an internal tool failure — a diagnostic
+ * command that prints useful output and then exits 1 should not have that
+ * output discarded. core/errors.ts's normalizeError() attaches the raw
+ * stdout/stderr/exitCode to the thrown KubectlError precisely for this
+ * case (added during integration — the original conversion pass flagged
+ * this as a regression because core/kubectl.ts was off-limits to it); this
+ * operation catches that specific shape and returns the combined text as a
+ * normal result, matching the original execFileSync-based tool exactly. A
+ * genuine spawn/connection/timeout failure has no exitCode and still
+ * propagates as an error.
  */
 
 import { KubectlError } from "../errors.js";
@@ -75,6 +72,17 @@ export async function execInPod(deps: Deps, args: ExecArgs): Promise<ExecResult>
 
   const timeoutMs = args.timeout || 60000;
 
-  const output = await deps.kubectl(cmdArgs, "exec_in_pod", { timeoutMs });
-  return { output };
+  try {
+    const output = await deps.kubectl(cmdArgs, "exec_in_pod", { timeoutMs });
+    return { output };
+  } catch (err) {
+    if (err instanceof KubectlError && typeof err.exitCode === "number") {
+      const output =
+        `Command exited with code ${err.exitCode}\n` +
+        (err.stdout ? `--- stdout ---\n${err.stdout}\n` : "") +
+        (err.stderr ? `--- stderr ---\n${err.stderr}` : "");
+      return { output };
+    }
+    throw err;
+  }
 }

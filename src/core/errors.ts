@@ -25,13 +25,36 @@ export class KubectlError extends Error {
   readonly code: ErrorCode;
   readonly operation: string;
   readonly tryHint?: string;
+  /**
+   * Raw stdout/stderr the failed command produced, and its numeric exit
+   * code — present only when the command actually ran and exited non-zero
+   * (as opposed to a spawn/connection/timeout failure, which has none of
+   * these). Most callers ignore them and use `message`; a caller like
+   * exec_in_pod, where a non-zero exit is a normal outcome carrying useful
+   * partial output rather than an internal failure, reads them directly
+   * instead of discarding the command's output.
+   */
+  readonly stdout?: string;
+  readonly stderr?: string;
+  readonly exitCode?: number;
 
-  constructor(message: string, operation: string, code: ErrorCode, tryHint?: string) {
+  constructor(
+    message: string,
+    operation: string,
+    code: ErrorCode,
+    tryHint?: string,
+    stdout?: string,
+    stderr?: string,
+    exitCode?: number,
+  ) {
     super(message);
     this.name = "KubectlError";
     this.operation = operation;
     this.code = code;
     this.tryHint = tryHint;
+    this.stdout = stdout;
+    this.stderr = stderr;
+    this.exitCode = exitCode;
   }
 }
 
@@ -39,6 +62,7 @@ interface ExecError {
   code?: string | number;
   killed?: boolean;
   signal?: string | null;
+  stdout?: string | Buffer;
   stderr?: string | Buffer;
 }
 
@@ -92,10 +116,19 @@ export function normalizeError(err: unknown, operation: string): KubectlError {
       );
     }
 
+    const stdoutText = Buffer.isBuffer(err.stdout)
+      ? err.stdout.toString("utf8")
+      : (err.stdout ?? "");
     const stderrText = Buffer.isBuffer(err.stderr)
       ? err.stderr.toString("utf8")
       : (err.stderr ?? "");
-    if (stderrText) {
+    // A numeric `code` here is the exited process's exit status — a
+    // spawn-level failure (command not found, permission denied to exec at
+    // all) has a string code like "ENOENT" instead, so this only fires for
+    // a command that actually ran to completion.
+    const exitCode = typeof err.code === "number" ? err.code : undefined;
+
+    if (stderrText || exitCode !== undefined) {
       const { code, safe } = classify(stderrText);
       const line = firstLine(stderrText);
       const message =
@@ -103,7 +136,15 @@ export function normalizeError(err: unknown, operation: string): KubectlError {
           ? `"${operation}" failed: ${line}`
           : `"${operation}" failed (kubectl/helm reported an error). Check the resource, ` +
             "namespace and context are correct, and that you have permission.";
-      return new KubectlError(message, operation, code);
+      return new KubectlError(
+        message,
+        operation,
+        code,
+        undefined,
+        stdoutText || undefined,
+        stderrText || undefined,
+        exitCode,
+      );
     }
   }
 

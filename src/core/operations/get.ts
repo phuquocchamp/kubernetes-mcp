@@ -265,8 +265,7 @@ export async function get(deps: Deps, args: GetArgs): Promise<GetResult> {
   // "secret/my-secret", group-qualified "secrets.v1./my-secret", and
   // comma-separated lists ("secret,configmap") so the masking decision
   // cannot be bypassed by addressing a Secret through an alternate syntax.
-  const shouldMaskSecrets =
-    process.env.MASK_SECRETS !== "false" && resourceReferencesSecret(resourceType);
+  const shouldMaskSecrets = deps.config.maskSecrets && resourceReferencesSecret(resourceType);
 
   const processedResult = shouldMaskSecrets ? maskSecretsData(raw, output) : raw;
 
