@@ -108,11 +108,11 @@ export function startSSEServer(server: Server) {
   const advertisedHost = isAllInterfacesHost(host) ? "localhost" : host;
 
   app.listen(port, host, () => {
-    console.log(
+    console.error(
       `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/sse`
     );
     if (isAuthEnabled()) {
-      console.log(
+      console.error(
         "Authentication enabled: X-MCP-AUTH header required for all MCP requests"
       );
     }

@@ -612,10 +612,10 @@ server.setRequestHandler(
 // Start the server
 if (process.env.ENABLE_UNSAFE_SSE_TRANSPORT) {
   startSSEServer(server);
-  console.log(`SSE server started`);
+  console.error(`SSE server started`);
 } else if (process.env.ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT) {
   startStreamableHTTPServer(server);
-  console.log(`Streamable HTTP server started`);
+  console.error(`Streamable HTTP server started`);
 } else {
   const transport = new StdioServerTransport();
 
@@ -629,7 +629,7 @@ if (process.env.ENABLE_UNSAFE_SSE_TRANSPORT) {
 
 ["SIGINT", "SIGTERM"].forEach((signal) => {
   process.on(signal, async () => {
-    console.log(`Received ${signal}, shutting down...`);
+    console.error(`Received ${signal}, shutting down...`);
     await server.close();
     process.exit(0);
   });

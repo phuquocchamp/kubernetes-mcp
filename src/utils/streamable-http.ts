@@ -93,7 +93,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
 
   // SSE notifications not supported in stateless mode
   app.get("/mcp", authMiddleware, async (req: express.Request, res: express.Response) => {
-    console.log("Received GET MCP request");
+    console.error("Received GET MCP request");
     res.writeHead(405).end(
       JSON.stringify({
         jsonrpc: "2.0",
@@ -108,7 +108,7 @@ export function startStreamableHTTPServer(server: Server): http.Server {
 
   // Session termination not needed in stateless mode
   app.delete("/mcp", authMiddleware, async (req: express.Request, res: express.Response) => {
-    console.log("Received DELETE MCP request");
+    console.error("Received DELETE MCP request");
     res.writeHead(405).end(
       JSON.stringify({
         jsonrpc: "2.0",
@@ -149,11 +149,11 @@ export function startStreamableHTTPServer(server: Server): http.Server {
   const advertisedHost = isAllInterfacesHost(host) ? "localhost" : host;
 
   const httpServer = app.listen(port, host, () => {
-    console.log(
+    console.error(
       `mcp-kubernetes-server is listening on port ${port}\nUse the following url to connect to the server:\nhttp://${advertisedHost}:${port}/mcp`
     );
     if (isAuthEnabled()) {
-      console.log(
+      console.error(
         "Authentication enabled: X-MCP-AUTH header required for all MCP requests"
       );
     }

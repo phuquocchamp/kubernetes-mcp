@@ -21,6 +21,8 @@
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "lint": "biome check src",
+    "format": "biome format --write src",
     "prepublishOnly": "npm run build",
     "dockerbuild": "docker buildx build -t flux159/mcp-server-kubernetes --platform linux/amd64,linux/arm64 --push .",
     "chat": "npx mcp-chat --server \"./dist/index.js\"",
@@ -52,6 +54,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "1.1.0",
+    "@biomejs/biome": "^2.5.3",
     "@types/express": "5.0.1",
     "@types/js-yaml": "4.0.9",
     "@types/node": "22.9.3",
