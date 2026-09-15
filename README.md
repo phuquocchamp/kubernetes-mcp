@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 <p align="center">
-  <img src="./docs/images/image.png" width="auto">
+  <img src="./docs/images/kubernetes-mcp-logo@4x.png" width="auto">
 </p>
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI assistants (Claude, Codex, Cursor, ...) manage Kubernetes clusters. It wraps `kubectl` and `helm` behind 23 typed tools, with argv-injection guards, secret masking, and tool/namespace gating so the server can be locked down to read-only, non-destructive, or single-namespace operation.
@@ -196,7 +196,7 @@ For a Docker image, `docker build -t kubernetes-mcp .` — multi-stage, ships ku
 
 ## Releases
 
-Local-only — nothing is published to npm or Docker Hub. Create a GitHub release with a `v{major}.{minor}.{patch}` tag on the [releases page](https://github.com/phuquocchamp/kubernetes-mcp/releases). That tag triggers `cd.yml`, which bumps the version in `package.json` / `src/config/server-config.ts`, commits to `main`, and attaches a source archive. Do not bump versions by hand.
+Local-only — nothing is published to npm or Docker Hub, and there is no CI/CD. To release: `npm run version:update <x.y.z>` (bumps `package.json` and `src/config/server-config.ts` together), `npm install --package-lock-only`, commit as `Bump version to <x.y.z>`, then create a `v<x.y.z>` GitHub release on the [releases page](https://github.com/phuquocchamp/kubernetes-mcp/releases). Never edit the version fields by hand.
 
 ## Not planned
 

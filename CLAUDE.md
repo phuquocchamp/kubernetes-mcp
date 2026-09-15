@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Testing and Quality
 
-- `npm test` - Runs the **unit** Vitest project only: `src/__tests__/**` plus the handful of cluster-free `tests/*.unit.test.ts` files. This is the suite CI and every PR must keep green; it needs no Kubernetes cluster and no kubectl/helm binaries.
+- `npm test` - Runs the **unit** Vitest project only: `src/__tests__/**` plus the handful of cluster-free `tests/*.unit.test.ts` files. This is the suite every PR must keep green (run it locally — there is no CI); it needs no Kubernetes cluster and no kubectl/helm binaries.
 - `npm run test:e2e` - Runs the **e2e** Vitest project: the rest of `tests/*.test.ts`. These require an active Kubernetes cluster connection (custom sequencer runs `kubectl.test.ts` last since it modifies cluster state) and are not expected to pass without one.
 - `npm run test:all` - Runs both projects together (equivalent to the old bare `vitest run`).
 - Tests have 120s timeout and 60s hook timeout due to Kubernetes operations
@@ -97,20 +97,16 @@ The server requires:
 
 This is a local-only fork: it is **not** published to npm or Docker Hub. `npx mcp-server-kubernetes` resolves to the original upstream package, not this codebase — consumers must clone and `npm run build` locally, then point their MCP client at the absolute `dist/index.js` path (see README's "Installation & Usage").
 
-Releases are handled by the CD workflow (`.github/workflows/cd.yml`), which triggers on any pushed tag matching `v*`. **The only manual step is creating the tag and a matching GitHub release** — the agent that merges a release-worthy PR should do this directly once the PR is merged.
+There is no CI/CD — no GitHub Actions workflows exist in this repo. Run `npm test` and `npm run build` locally before merging; nothing enforces it for you.
 
-**Do NOT bump the version numbers yourself.** CD owns the version bump: on tag push it runs `npm run version:update`, updates the version in every version-bearing file (`package.json`, `src/config/server-config.ts`), commits `Bump version to <x.y.z>` to `main`, builds, and uploads a source-archive release asset. It does **not** publish anywhere. Editing those files by hand collides with that step and breaks the release. Leave the source at the previous version.
+Releases are manual. To cut one, after the PR is merged to `main`:
 
-To cut a release, after the PR is merged to `main`:
+1. Bump every version-bearing file in one go and commit it:
+   `npm run version:update <x.y.z>` (updates `package.json` and `src/config/server-config.ts`), then `npm install --package-lock-only` so the lockfile's version fields match, then commit as `Bump version to <x.y.z>`.
+2. Tag and publish a GitHub release on that commit:
+   `gh release create v<x.y.z> --target main --title "Release v<x.y.z>" --notes "..."` — `<x.y.z>` is the next patch version (e.g. `v4.0.2` after `v4.0.1`); notes are one or two terse lines referencing the PR number, e.g. `(#332)`.
 
-- Create the tag and GitHub release targeting the current tip of `main` (the merge commit):
-  - Tag name: `v<x.y.z>` where `<x.y.z>` is the next patch version (e.g. `v4.0.2` after `v4.0.1`). This must match the version CD will compute, or the release-asset upload will fail.
-  - Release title: `Release v<x.y.z>` (e.g. `Release v4.0.2`)
-  - Release notes: one or two terse lines describing the change, referencing the PR number (e.g. `(#332)`), matching the style of prior releases.
-
-  Example: `gh release create v4.0.2 --target main --title "Release v4.0.2" --notes "..."` (this creates the `v4.0.2` tag, which triggers CD).
-
-That single tag/release is all that's needed — CD handles the version bump and asset upload from there.
+Never edit the version fields by hand — always go through `version:update`, so the two files can't drift.
 
 ## Security Fixes and Coordinated Disclosure
 
