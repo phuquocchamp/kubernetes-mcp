@@ -1,329 +1,57 @@
-# MCP Server Kubernetes
+# Kubernetes MCP Server
 
-[![CI](https://github.com/Flux159/mcp-server-kubernetes/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/mcp-server-kubernetes/actions/workflows/ci.yml)
-[![Language](https://img.shields.io/github/languages/top/Flux159/mcp-server-kubernetes)](https://github.com/yourusername/mcp-server-kubernetes)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Stars](https://img.shields.io/github/stars/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/stargazers)
-[![Issues](https://img.shields.io/github/issues/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Flux159/mcp-server-kubernetes/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/commits/main)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Flux159/mcp-server-kubernetes/refs/heads/main/icon.png" width="200">
+  <img src="./docs/images/image.png" width="auto">
 </p>
 
-MCP Server that can connect to a Kubernetes cluster and manage it. Supports loading kubeconfig from multiple sources in priority order.
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI assistants (Claude, Codex, Cursor, ...) manage Kubernetes clusters. It wraps `kubectl` and `helm` behind 23 typed tools, with argv-injection guards, secret masking, and tool/namespace gating so the server can be locked down to read-only, non-destructive, or single-namespace operation.
 
-https://github.com/user-attachments/assets/f25f8f4e-4d04-479b-9ae0-5dac452dd2ed
+> Fork of [Flux159/mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes), refactored for local/internal use. **Not published to npm or Docker Hub** — `npx mcp-server-kubernetes` resolves to the original upstream package, not this codebase. Build from source and point your MCP client at the local `dist/index.js`.
 
 ## Installation & Usage
 
 ### Prerequisites
 
-Before using this MCP server with any tool, make sure you have:
+1. `kubectl` on your PATH and a valid kubeconfig with configured contexts
+2. Access to a Kubernetes cluster (minikube, Rancher Desktop, GKE, ...) — verify with `kubectl get pods`
+3. Helm v3 on your PATH (optional, only for the Helm tools)
+4. Node.js >= 18
 
-1. kubectl installed and in your PATH
-2. A valid kubeconfig file with contexts configured
-3. Access to a Kubernetes cluster configured for kubectl (e.g. minikube, Rancher Desktop, GKE, etc.)
-4. Helm v3 installed and in your PATH (no Tiller required). Optional if you don't plan to use Helm.
-
-You can verify your connection by running `kubectl get pods` in a terminal to ensure you can connect to your cluster without credential issues.
-
-By default, the server loads kubeconfig from `~/.kube/config`. For additional authentication options (environment variables, custom paths, etc.), see [ADVANCED_README.md](ADVANCED_README.md).
-
-### Claude Code
-
-Add the MCP server to Claude Code using the built-in command:
+### 1. Clone and build
 
 ```bash
-claude mcp add kubernetes -- npx mcp-server-kubernetes
+git clone https://github.com/phuquocchamp/kubernetes-mcp.git
+cd kubernetes-mcp
+npm install
+npm run build    # produces dist/index.js
+echo "$(pwd)/dist/index.js"   # note the absolute path — every config below needs it
 ```
 
-This will automatically configure the server in your Claude Code MCP settings.
+> **If you are an AI agent installing this**: use the absolute path printed above, never a relative one. Verify `dist/index.js` exists before writing any client config. Default to user scope unless the user asked for project (shared) scope.
 
-### Codex
+### 2. Configure your MCP client
 
-Add the MCP server to [Codex CLI](https://developers.openai.com/codex/cli/) using the built-in command:
+**Claude Code / Codex CLI:**
 
 ```bash
-codex mcp add kubernetes -- npx mcp-server-kubernetes
+claude mcp add kubernetes -- node /absolute/path/to/kubernetes-mcp/dist/index.js
+codex  mcp add kubernetes -- node /absolute/path/to/kubernetes-mcp/dist/index.js
 ```
 
-This registers the server globally in `~/.codex/config.toml` and makes its tools available in all Codex sessions.
-
-### Claude Desktop
-
-Add the following configuration to your Claude Desktop config file:
+**Claude Desktop / Cursor / VS Code / project `.mcp.json`** — merge under `mcpServers`:
 
 ```json
 {
   "mcpServers": {
     "kubernetes": {
-      "command": "npx",
-      "args": ["mcp-server-kubernetes"]
-    }
-  }
-}
-```
-
-### Claude Desktop Connector via mcpb
-
-MCP Server Kubernetes is also available as a [mcpb](https://github.com/anthropics/mcpb) (formerly dxt) extension. In Claude Desktop, go to Settings (`Cmd+,` on Mac) -> Extensions -> Browse Extensions and scroll to find mcp-server-kubernetes in the modal. Install it & it will install & utilize kubectl via command line & your kubeconfig.
-
-To manually install, you can also get the .mcpb by going to the latest [Release](https://github.com/Flux159/mcp-server-kubernetes/releases) and downloading it.
-
-### VS Code
-
-[![Install Kubernetes MCP in VS Code](https://img.shields.io/badge/Install%20Kubernetes%20MCP%20in%20VS%20Code-blue?logo=visualstudiocode)](vscode:mcp/install?%7B%22name%22%3A%20%22kubernetes%22%2C%20%22type%22%3A%20%22stdio%22%2C%20%22command%22%3A%20%22npx%22%2C%20%22args%22%3A%20%5B%22mcp-server-kubernetes%22%5D%7D)
-
-For VS Code integration, you can use the MCP server with extensions that support the Model Context Protocol:
-
-1. Install a compatible MCP extension (such as Claude Dev or similar MCP clients)
-2. Configure the extension to use this server:
-
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "npx",
-      "args": ["mcp-server-kubernetes"],
-      "description": "Kubernetes cluster management and operations"
-    }
-  }
-}
-```
-
-### Cursor
-
-Cursor supports MCP servers through its AI integration. Add the server to your Cursor MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "npx",
-      "args": ["mcp-server-kubernetes"]
-    }
-  }
-}
-```
-
-The server will automatically connect to your current kubectl context. You can verify the connection by asking the AI assistant to list your pods or create a test deployment.
-
-## Usage with mcp-chat
-
-[mcp-chat](https://github.com/Flux159/mcp-chat) is a CLI chat client for MCP servers. You can use it to interact with the Kubernetes server.
-
-```shell
-npx mcp-chat --server "npx mcp-server-kubernetes"
-```
-
-Alternatively, pass it your existing Claude Desktop configuration file from above (Linux should pass the correct path to config):
-
-Mac:
-
-```shell
-npx mcp-chat --config "~/Library/Application Support/Claude/claude_desktop_config.json"
-```
-
-Windows:
-
-```shell
-npx mcp-chat --config "%APPDATA%\Claude\claude_desktop_config.json"
-```
-
-## Features
-
-- [x] Connect to a Kubernetes cluster
-- [x] Unified kubectl API for managing resources
-  - Get or list resources with `kubectl_get`
-  - Describe resources with `kubectl_describe`
-  - List resources with `kubectl_get`
-  - Create resources with `kubectl_create`
-  - Apply YAML manifests with `kubectl_apply`
-  - Delete resources with `kubectl_delete`
-  - Get logs with `kubectl_logs`
-  - Manage kubectl contexts with `kubectl_context`
-  - Explain Kubernetes resources with `explain_resource`
-  - List API resources with `list_api_resources`
-  - Scale resources with `kubectl_scale`
-  - Update field(s) of a resource with `kubectl_patch`
-  - Manage deployment rollouts with `kubectl_rollout`
-  - Execute any kubectl command with `kubectl_generic`
-  - Verify connection with `ping`
-- [x] Advanced operations
-  - Scale deployments with `kubectl_scale` (replaces legacy `scale_deployment`)
-  - Port forward to pods and services with `port_forward`
-  - Run Helm operations
-    - Install, upgrade, and uninstall charts
-    - Support for custom values, repositories, and versions
-    - Template-based installation (`helm_template_apply`) to bypass authentication issues
-    - Template-based uninstallation (`helm_template_uninstall`) to bypass authentication issues
-  - Pod cleanup operations
-    - Clean up problematic pods (`cleanup_pods`) in states: Evicted, ContainerStatusUnknown, Completed, Error, ImagePullBackOff, CrashLoopBackOff
-  - Node management operations
-    - Cordoning, draining, and uncordoning nodes (`node_management`) for maintenance and scaling operations
-- [x] Troubleshooting Prompt (`k8s-diagnose`)
-  - Guides through a systematic Kubernetes troubleshooting flow for pods based on a keyword and optional namespace.
-- [x] Non-destructive mode for read and create/update-only access to clusters
-- [x] Secrets masking for security (masks sensitive data in `kubectl get secrets` commands, does not affect logs)
-- [x] **OpenTelemetry Observability** (opt-in)
-  - Distributed tracing for all tool calls
-  - Export to Jaeger, Tempo, Grafana, or any OTLP backend
-  - Configurable sampling strategies
-  - Rich span attributes (tool name, duration, K8s context, errors)
-  - See [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) for details
-
-## Observability
-
-The MCP Kubernetes server includes optional **OpenTelemetry integration** for comprehensive observability. This feature is disabled by default and can be enabled via environment variables or Helm configuration.
-
-### Quick Start
-
-Enable observability with environment variables:
-
-```bash
-export ENABLE_TELEMETRY=true
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-
-npx mcp-server-kubernetes
-```
-
-### What Gets Traced
-
-- **All tool calls**: kubectl_get, kubectl_apply, kubectl_logs, etc.
-- **Execution duration**: How long each operation takes
-- **Success/failure status**: Automatic error tracking
-- **Kubernetes context**: Namespace, context, resource type
-- **Rich metadata**: Host, process, and custom attributes
-
-### Backends Supported
-
-Works with any OTLP-compatible backend:
-- **Jaeger** (open source)
-- **Grafana Tempo** (open source)
-- **Grafana Cloud** (commercial)
-- **Datadog**, **New Relic**, **Honeycomb**, **Lightstep**, **AWS X-Ray**
-
-### Configuration
-
-See **[docs/OBSERVABILITY.md](docs/OBSERVABILITY.md)** for comprehensive documentation including:
-- Configuration options
-- Deployment examples (Kubernetes, Helm, Claude Code)
-- Sampling strategies
-- Production best practices
-- Troubleshooting guide
-
-### Example with Jaeger
-
-```bash
-# Start Jaeger
-docker run -d --name jaeger \
-  -e COLLECTOR_OTLP_ENABLED=true \
-  -p 16686:16686 \
-  -p 4317:4317 \
-  jaegertracing/all-in-one:latest
-
-# Enable telemetry
-export ENABLE_TELEMETRY=true
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-export OTEL_TRACES_SAMPLER=always_on
-
-# Run server
-npx mcp-server-kubernetes
-
-# View traces: http://localhost:16686
-```
-
-## Prompts
-
-The MCP Kubernetes server includes specialized prompts to assist with common diagnostic operations.
-
-### /k8s-diagnose Prompt
-
-This prompt provides a systematic troubleshooting flow for Kubernetes pods. It accepts a `keyword` to identify relevant pods and an optional `namespace` to narrow the search.
-The prompt's output will guide you through an autonomous troubleshooting flow, providing instructions for identifying issues, collecting evidence, and suggesting remediation steps.
-
-## Local Development
-
-Make sure that you have [bun installed](https://bun.sh/docs/installation). Clone the repo & install dependencies:
-
-```bash
-git clone https://github.com/Flux159/mcp-server-kubernetes.git
-cd mcp-server-kubernetes
-bun install
-```
-
-### Development Workflow
-
-1. Start the server in development mode (watches for file changes):
-
-```bash
-bun run dev
-```
-
-2. Run unit tests:
-
-```bash
-bun run test
-```
-
-3. Build the project:
-
-```bash
-bun run build
-```
-
-4. Local Testing with [Inspector](https://github.com/modelcontextprotocol/inspector)
-
-```bash
-npx @modelcontextprotocol/inspector node dist/index.js
-# Follow further instructions on terminal for Inspector link
-```
-
-5. Local testing with Claude Desktop
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-kubernetes": {
       "command": "node",
-      "args": ["/path/to/your/mcp-server-kubernetes/dist/index.js"]
-    }
-  }
-}
-```
-
-6. Local testing with [mcp-chat](https://github.com/Flux159/mcp-chat)
-
-```bash
-bun run chat
-```
-
-## Contributing
-
-See the [CONTRIBUTING.md](CONTRIBUTING.md) file for details.
-
-## Advanced
-
-### Non-Destructive Mode
-
-You can run the server in a non-destructive mode that disables all destructive operations (delete pods, delete deployments, delete namespaces, etc.):
-
-```shell
-ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS=true npx mcp-server-kubernetes
-```
-
-For Claude Desktop configuration with non-destructive mode:
-
-```json
-{
-  "mcpServers": {
-    "kubernetes-readonly": {
-      "command": "npx",
-      "args": ["mcp-server-kubernetes"],
+      "args": ["/absolute/path/to/kubernetes-mcp/dist/index.js"],
       "env": {
+        "KUBECONFIG_PATH": "/absolute/path/to/your-cluster.yaml",
+        "ALLOWED_NAMESPACES": "team-a,team-a-workers",
         "ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS": "true"
       }
     }
@@ -331,118 +59,145 @@ For Claude Desktop configuration with non-destructive mode:
 }
 ```
 
-### Commands Available in Non-Destructive Mode
+The `env` block is optional — without it the server uses `~/.kube/config`, all namespaces, and all tools. Every option is listed under [Configuration](#configuration). The path must be absolute; restart the client (or reconnect MCP) after editing, then verify by asking the assistant to list your pods.
 
-All read-only and resource creation/update operations remain available:
+## Tools
 
-- Resource Information: `kubectl_get`, `kubectl_describe`, `kubectl_logs`, `explain_resource`, `list_api_resources`
-- Resource Creation/Modification: `kubectl_apply`, `kubectl_create`, `kubectl_scale`, `kubectl_patch`, `kubectl_rollout`
-- Helm Operations: `install_helm_chart`, `upgrade_helm_chart`, `helm_template_apply`, `helm_template_uninstall`
-- Connectivity: `port_forward`, `stop_port_forward`
-- Context Management: `kubectl_context`
+23 tools, grouped by the permission category the gating env vars use. `*` marks a required param. Every `namespace`/`allNamespaces` param is also subject to [`ALLOWED_NAMESPACES`](#restricting-namespace-access) when set.
 
-### Commands Disabled in Non-Destructive Mode
+| Name | Permission | Params | Description |
+|---|---|---|---|
+| `kubectl_get` | read-only | `resourceType`*, `name`, `namespace`, `output`, `allNamespaces`, `labelSelector`, `fieldSelector`, `sortBy`, `context` | Get or list resources by type, name, and optionally namespace |
+| `kubectl_describe` | read-only | `resourceType`*, `name`*, `namespace`, `context`, `allNamespaces` | Describe a resource |
+| `kubectl_logs` | read-only | `resourceType`* (pod\|deployment\|job\|cronjob), `name`*, `namespace`, `container`, `tail`, `since`, `sinceTime`, `timestamps`, `previous`, `follow`, `labelSelector`, `context` | Get logs from pods, deployments, or jobs |
+| `kubectl_context` | read-only | `operation` (list\|get\|set, default list), `name`, `showCurrent`, `detailed`, `output` | List, get, or set the current kubectl context |
+| `kubectl_reconnect` | read-only | — | Recreate all API clients (e.g. after a control-plane upgrade rotates IPs) |
+| `explain_resource` | read-only | `resource`*, `apiVersion`, `recursive`, `context`, `output` | Get documentation for a resource or field |
+| `list_api_resources` | read-only | `apiGroup`, `namespaced`, `context`, `verbs`, `output` | List the API resources available in the cluster |
+| `ping` | read-only | — | Verify the server is responsive |
+| `kubectl_apply` | non-destructive† | `manifest`, `filename`, `namespace`, `dryRun`, `force`, `context` | Apply a YAML manifest from a string or file |
+| `kubectl_create` | non-destructive | `resourceType`, `name`, `namespace`, `manifest`, `filename`, `fromLiteral`, `fromFile`, `fromFileContent`, `secretType`, `serviceType`, `tcpPort`, `image`, `replicas`, `port`, `schedule`, `suspend`, `command`, `labels`, `annotations`, `dryRun`, `output`, `validate`, `context` | Create resources from a manifest or via kubectl subcommands (configmap, secret, deployment, service, cronjob, job, ...) |
+| `kubectl_patch` | non-destructive | `resourceType`*, `name`*, `namespace`, `patchType` (strategic\|merge\|json), `patchData`, `patchFile`, `dryRun`, `context` | Update field(s) of a resource |
+| `kubectl_scale` | non-destructive | `name`*, `namespace`, `replicas`*, `resourceType` (default deployment), `context` | Scale a deployment/statefulset/replicaset |
+| `kubectl_rollout` | non-destructive | `subCommand` (history\|pause\|restart\|resume\|status\|undo), `resourceType` (deployment\|daemonset\|statefulset), `name`*, `namespace`, `revision`, `toRevision`, `timeout`, `watch`, `context` | Manage a rollout |
+| `install_helm_chart` | non-destructive† | `name`*, `chart`*, `namespace`, `context`, `repo`, `values`, `valuesFile`, `useTemplate`, `createNamespace` | Install a Helm chart (`useTemplate` = `helm template` + `kubectl apply`, bypasses auth issues) |
+| `upgrade_helm_chart` | non-destructive | `name`*, `chart`*, `namespace`, `context`, `repo`, `values`, `valuesFile` | Upgrade a Helm release |
+| `port_forward` | non-destructive | `resourceType`*, `resourceName`*, `localPort`*, `targetPort`*, `namespace` | Forward a local port to a resource |
+| `stop_port_forward` | non-destructive | `id`* | Stop a running port-forward |
+| `exec_in_pod` | non-destructive† | `name`*, `namespace`, `command`* (array — no shell interpretation), `container`, `timeout`, `context` | Execute a command in a pod/container |
+| `kubectl_delete` | **destructive** | `resourceType`, `name`, `namespace`, `labelSelector`, `manifest`, `filename`, `allNamespaces`, `force`, `gracePeriodSeconds`, `context` | Delete resources by type/name, labels, or manifest |
+| `uninstall_helm_chart` | **destructive** | `name`*, `namespace`, `context` | Uninstall a Helm release |
+| `cleanup` | **destructive** | — | Delete every resource this server session created |
+| `kubectl_generic` | **destructive** | `command`*, `subCommand`, `resourceType`, `name`, `namespace`, `allNamespaces`, `outputFormat`, `flags`, `args`, `context` | Run any kubectl command with arbitrary args/flags |
+| `node_management` | **destructive** | `operation`* (cordon\|drain\|uncordon), `nodeName`, `force`, `gracePeriod`, `deleteLocalData`, `ignoreDaemonsets`, `timeout`, `dryRun`, `confirmDrain` | Cordon, drain (requires `confirmDrain`), or uncordon nodes |
 
-The following destructive operations are disabled:
+- **Read-only mode** (`ALLOW_ONLY_READONLY_TOOLS=true`) registers only the 8 read-only tools.
+- **Non-destructive mode** (`ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS=true`) removes exactly the 5 **destructive** tools.
+- A gated tool is never *registered* (it does not appear in `tools/list`), not registered-then-refused. Gating is driven solely by the `READONLY_TOOL_NAMES` / `DESTRUCTIVE_TOOL_NAMES` sets in `src/server.ts`.
+- † carries an MCP `destructiveHint: true` annotation for client UIs but is **not** in the destructive gating set, so it stays enabled in non-destructive mode.
 
-- `kubectl_delete`: Deleting any Kubernetes resources
-- `uninstall_helm_chart`: Uninstalling Helm charts
-- `cleanup`: Cleanup of managed resources
-- `cleanup_pods`: Cleaning up problematic pods
-- `node_management`: Node management operations (can drain nodes)
-- `kubectl_generic`: General kubectl command access (may include destructive operations)
+## Features
 
-For additional advanced features, see the [ADVANCED_README.md](ADVANCED_README.md) and also the [docs](https://github.com/Flux159/mcp-server-kubernetes/tree/main/docs) folder for specific information on `helm_install`, `helm_template_apply`, node management & pod cleanup.
+- **Security hardening**: kubectl/helm argv-injection guards (credential/endpoint-redirecting flags are refused), secret masking in `kubectl get secrets` output, bearer-token auth and DNS-rebinding protection on remote transports
+- **Gating**: tool allowlist/read-only/non-destructive modes and a namespace allowlist (`ALLOWED_NAMESPACES`)
+- **Multi-source kubeconfig**: inline YAML/JSON, bearer token, in-cluster service account, custom path, or `~/.kube/config`
+- **Transports**: stdio (default), SSE, Streamable HTTP
+- **Observability**: opt-in OpenTelemetry tracing of every tool call (OTLP export, configurable sampling) — see [docs/observability.md](docs/observability.md)
+- **Diagnostic prompt**: `k8s-diagnose` — a guided pod-troubleshooting flow, taking a `keyword` and optional `namespace`
+
+## Configuration
+
+Everything is configured through the `env` block of your MCP client config (or the process environment). The server reads no `.env` file.
+
+### Kubeconfig source (first match wins)
+
+| Priority | Env var(s) | Purpose |
+|---|---|---|
+| 1 | `KUBECONFIG_YAML` | Inline kubeconfig as YAML |
+| 2 | `KUBECONFIG_JSON` | Inline kubeconfig as JSON |
+| 3 | `K8S_SERVER` + `K8S_TOKEN` (+ `K8S_CA_DATA`, `K8S_SKIP_TLS_VERIFY`) | Minimal config from a bearer token |
+| 4 | *(none)* | In-cluster service account, when running in a pod |
+| 5 | `KUBECONFIG_PATH` | Path to a specific kubeconfig file |
+| 6 | `KUBECONFIG` | Standard kubectl env var |
+| 7 | *(none)* | `~/.kube/config` |
+
+After loading: `K8S_CONTEXT` selects a context from that file; `K8S_NAMESPACE` sets the namespace tools use when none is passed (default `default`).
+
+### Server behavior (`src/core/config.ts`)
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `ALLOW_ONLY_READONLY_TOOLS` | `false` | Register only the 8 read-only tools |
+| `ALLOW_ONLY_NON_DESTRUCTIVE_TOOLS` | `false` | Do not register the 5 destructive tools |
+| `ALLOWED_TOOLS` | *(unset)* | Comma-separated explicit tool allowlist; overrides the two flags above; an unknown name fails startup |
+| `ALLOWED_NAMESPACES` | *(unset)* | Comma-separated namespace allowlist — see [below](#restricting-namespace-access) |
+| `MASK_SECRETS` | `true` | Mask values in `kubectl get secrets` output |
+| `ALLOW_KUBECTL_UNSAFE_FLAGS` | `false` | Allow flags that redirect the API server / substitute credentials (`--server`, `--token`, `--kubeconfig`, ...) — a prompt-injection defense, leave off |
+| `SPAWN_MAX_BUFFER` | `10485760` | Max stdout bytes from a kubectl/helm process |
+| `ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT` / `ENABLE_UNSAFE_SSE_TRANSPORT` | *(unset)* | Use a remote transport instead of stdio; "unsafe" because it must be paired with `MCP_AUTH_TOKEN` |
+| `HOST` / `PORT` | `localhost` / `3000` | Bind address for a remote transport |
+| `MCP_AUTH_TOKEN` | *(unset)* | Shared secret required as `X-MCP-AUTH` header on remote transports |
+| `DNS_REBINDING_PROTECTION` / `DNS_REBINDING_ALLOWED_HOST` | `true` / *(unset)* | `Host`-header check on remote transports, and its override for reverse proxies |
+| `ENABLE_TELEMETRY` + `OTEL_EXPORTER_OTLP_ENDPOINT` | *(unset)* | Turn on OpenTelemetry tracing; further `OTEL_*` knobs in [docs/observability.md](docs/observability.md) |
+
+### Restricting Namespace Access
+
+If your kubeconfig's RBAC already scopes the identity to certain namespaces, that is the real enforcement boundary — the Kubernetes API server checks it and nothing the client sends can bypass it. `ALLOWED_NAMESPACES` is an optional guardrail on top: an allowlist the server checks itself, before a request reaches the cluster, useful when the kubeconfig identity is broader than the access you want to expose.
+
+```json
+"env": {
+  "KUBECONFIG_PATH": "/absolute/path/to/your-cluster.yaml",
+  "ALLOWED_NAMESPACES": "staging,default"
+}
+```
+
+- Any `-n`/`--namespace` value outside the list is refused with a clear error, in every form kubectl/helm accept (`-n staging`, `-nstaging`, `--namespace staging`, `--namespace=staging`).
+- `--all-namespaces`/`-A` is refused while the allowlist is set.
+- Commands with no namespace flag (`kubectl_get nodes`, `list_api_resources`, `kubectl_context`, ...) are unaffected — this restricts namespace *scope*, not which commands are namespaced.
+- Most tools fall back to namespace `default` when none is passed, so include `default` in the list or point `K8S_NAMESPACE` at an allowed namespace.
 
 ## Architecture
 
-See this [DeepWiki link](https://deepwiki.com/Flux159/mcp-server-kubernetes) for a more indepth architecture overview created by Devin.
-
-This section describes the high-level architecture of the MCP Kubernetes server.
-
-### Request Flow
-
-The sequence diagram below illustrates how requests flow through the system:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Transport as Transport Layer
-    participant Server as MCP Server
-    participant Filter as Tool Filter
-    participant Handler as Request Handler
-    participant K8sManager as KubernetesManager
-    participant K8s as Kubernetes API
-
-    Note over Transport: StdioTransport or<br>SSE Transport
-
-    Client->>Transport: Send Request
-    Transport->>Server: Forward Request
-
-    alt Tools Request
-        Server->>Filter: Filter available tools
-        Note over Filter: Remove destructive tools<br>if in non-destructive mode
-        Filter->>Handler: Route to tools handler
-
-        alt kubectl operations
-            Handler->>K8sManager: Execute kubectl operation
-            K8sManager->>K8s: Make API call
-        else Helm operations
-            Handler->>K8sManager: Execute Helm operation
-            K8sManager->>K8s: Make API call
-        else Port Forward operations
-            Handler->>K8sManager: Set up port forwarding
-            K8sManager->>K8s: Make API call
-        end
-
-        K8s-->>K8sManager: Return result
-        K8sManager-->>Handler: Process response
-        Handler-->>Server: Return tool result
-    else Resource Request
-        Server->>Handler: Route to resource handler
-        Handler->>K8sManager: Get resource data
-        K8sManager->>K8s: Query API
-        K8s-->>K8sManager: Return data
-        K8sManager-->>Handler: Format response
-        Handler-->>Server: Return resource data
-    end
-
-    Server-->>Transport: Send Response
-    Transport-->>Client: Return Final Response
+```
+src/
+├── index.ts               # entrypoint: load config, build server, pick transport
+├── server.ts              # tool registry + gating (ALL_TOOL_NAMES, READONLY/DESTRUCTIVE sets, REGISTRARS)
+├── core/
+│   ├── config.ts          # Zod schema for the env vars above
+│   ├── kubectl.ts         # runKubectl/runHelm — the single execFile choke point; every argv guard runs here
+│   ├── errors.ts          # normalizeError → KubectlError (never leaks raw stderr)
+│   ├── telemetry.ts       # OpenTelemetry spans around each command
+│   ├── operations/        # pure logic: build kubectl/helm argv, parse output (unit-tested with fake deps)
+│   ├── format/            # render an operation's result as tool text
+│   └── security/          # argv guards: dangerous flags, file reads, namespace allowlist
+├── tools/                 # thin registrars: Zod input schema → operation → format
+├── prompts/index.ts       # k8s-diagnose
+├── resources/handlers.ts  # MCP resource endpoints
+├── security/              # transport auth + DNS-rebinding allowlist
+└── utils/kubernetes-manager.ts  # kubeconfig source resolution + API clients
 ```
 
-See this [DeepWiki link](https://deepwiki.com/Flux159/mcp-server-kubernetes) for a more indepth architecture overview created by Devin.
+Layering: `tools/*.ts` (MCP/Zod adapter) → `core/operations/*.ts` (pure kubectl/helm logic) → `core/format/*.ts` (text response). Every command funnels through `core/kubectl.ts`, so the injection guards and the namespace allowlist live in one place rather than per tool. `CLAUDE.md` has the contributor contract for adding a tool.
 
-## Publishing new release
+## Development
 
-Go to the [releases page](https://github.com/Flux159/mcp-server-kubernetes/releases), click on "Draft New Release", click "Choose a tag" and create a new tag by typing out a new version number using "v{major}.{minor}.{patch}" semver format. Then, write a release title "Release v{major}.{minor}.{patch}" and description / changelog if necessary and click "Publish Release".
+```bash
+npm run dev        # tsc --watch
+npm test           # unit suite — no cluster, no kubectl/helm needed; must stay green
+npm run test:e2e   # builds, then runs the e2e suite against your current kubectl context
+npm run test:all   # both
+npm run build      # tsc → dist/
 
-This will create a new tag which will trigger a new release build via the cd.yml workflow. Once successful, the new release will be published to [npm](https://www.npmjs.com/package/mcp-server-kubernetes). Note that there is no need to update the package.json version manually, as the workflow will automatically update the version number in the package.json file & push a commit to main.
+npx @modelcontextprotocol/inspector node dist/index.js      # drive the server without a client
+npx mcp-chat --server "node dist/index.js"                 # same, via the mcp-chat CLI
+```
+
+For a Docker image, `docker build -t kubernetes-mcp .` — multi-stage, ships kubectl/helm/gcloud/awscli, runs as non-root.
+
+## Releases
+
+Local-only — nothing is published to npm or Docker Hub. Create a GitHub release with a `v{major}.{minor}.{patch}` tag on the [releases page](https://github.com/phuquocchamp/kubernetes-mcp/releases). That tag triggers `cd.yml`, which bumps the version in `package.json` / `src/config/server-config.ts`, commits to `main`, and attaches a source archive. Do not bump versions by hand.
 
 ## Not planned
 
 Adding clusters to kubectx.
-
-## Star History
-
-<a href="https://github.com/Flux159/rust-star-history">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Flux159/mcp-server-kubernetes/star-history/star-history-dark.svg">
-    <img alt="Star History Chart" src="https://raw.githubusercontent.com/Flux159/mcp-server-kubernetes/star-history/star-history.svg">
-  </picture>
-</a>
-
-## 🖊️ Cite
-
-If you find this repo useful, please cite:
-
-```
-@software{Patel_MCP_Server_Kubernetes_2024,
-author = {Patel, Paras and Sonwalkar, Suyog},
-month = jul,
-title = {{MCP Server Kubernetes}},
-url = {https://github.com/Flux159/mcp-server-kubernetes},
-version = {2.5.0},
-year = {2024}
-}
-```

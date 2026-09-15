@@ -410,6 +410,84 @@ export function assertNotFlagLike(value: string | undefined, field: string): voi
   );
 }
 
+function rejectNamespace(namespace: string, allowedNamespaces: readonly string[]): never {
+  throw new McpError(
+    ErrorCode.InvalidParams,
+    `Refusing to run kubectl/helm against namespace "${namespace}": ` +
+      `ALLOWED_NAMESPACES restricts this server to ${allowedNamespaces.join(", ")}.`,
+  );
+}
+
+function rejectAllNamespaces(allowedNamespaces: readonly string[]): never {
+  throw new McpError(
+    ErrorCode.InvalidParams,
+    `Refusing to run kubectl/helm with --all-namespaces: ALLOWED_NAMESPACES ` +
+      `restricts this server to ${allowedNamespaces.join(", ")}.`,
+  );
+}
+
+/**
+ * Reject a fully-constructed kubectl/helm argv that names a namespace (via
+ * -n/--namespace, in every split/attached/clustered form pflag accepts) or
+ * requests --all-namespaces/-A outside ALLOWED_NAMESPACES, when that
+ * allowlist is configured.
+ *
+ * This is defense-in-depth on top of kubeconfig RBAC, not a replacement for
+ * it: the real access boundary is whatever Role/RoleBinding the loaded
+ * kubeconfig's identity has, enforced server-side by the Kubernetes API and
+ * unaffected by anything checked here. This guard exists for the case where
+ * that identity's RBAC is broader than intended (or "default"-scoped) and
+ * you want the MCP server itself to refuse other namespaces up front, with
+ * a clear error instead of relying on a 403 from the API (or none at all,
+ * if the identity happens to be cluster-admin).
+ *
+ * A command with no namespace flag at all (cluster-scoped resources like
+ * nodes/PVs/CRDs, kubectl_context, api-resources, ...) is left alone — this
+ * guards namespace SCOPE on commands that have one, not whether a command
+ * is namespaced.
+ */
+export function assertNamespaceAllowed(
+  args: readonly string[],
+  allowedNamespaces: readonly string[] | null,
+): void {
+  if (!allowedNamespaces || allowedNamespaces.length === 0) return;
+
+  for (let i = 0; i < args.length; i++) {
+    const tok = args[i];
+    if (typeof tok !== "string" || !tok.startsWith("-")) continue;
+
+    if (tok.startsWith("--")) {
+      const name = normalizeFlagName(tok);
+      if (name === "all-namespaces") rejectAllNamespaces(allowedNamespaces);
+      if (name === "namespace") {
+        const eq = tok.indexOf("=");
+        const value = eq === -1 ? args[i + 1] : tok.slice(eq + 1);
+        if (value !== undefined && !allowedNamespaces.includes(value)) {
+          rejectNamespace(value, allowedNamespaces);
+        }
+      }
+      continue;
+    }
+
+    const letters = shortFlagLetters(tok);
+    if (letters === null) continue;
+    if (letters.includes("A")) rejectAllNamespaces(allowedNamespaces);
+
+    const nIdx = letters.indexOf("n");
+    if (nIdx === -1) continue;
+    // "n" (--namespace) is a value-taking short flag: shortFlagLetters()
+    // stops the cluster there, so the value is whatever follows in this
+    // token ("-ndefault") or, if nothing follows, the next argv token
+    // ("-n", "default") — same split as outputFormatValue() above.
+    let rest = tok.slice(1 + nIdx + 1);
+    if (rest.startsWith("=")) rest = rest.slice(1);
+    const value = rest === "" ? args[i + 1] : rest;
+    if (value !== undefined && !allowedNamespaces.includes(value)) {
+      rejectNamespace(value, allowedNamespaces);
+    }
+  }
+}
+
 /**
  * Drop-in replacement for child_process.execFileSync that scans the argv for
  * credential/target-redirecting flags before executing. Tool files import this

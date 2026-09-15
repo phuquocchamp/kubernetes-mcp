@@ -6,7 +6,7 @@
  * port-forwards, watches, API clients), and the validated config. Operation
  * functions take (deps, args) and return typed data or throw a
  * KubectlError from core/errors.ts — they know nothing about MCP, zod, or
- * tool registration. See docs/REFACTOR-PATTERN.md for the full contract.
+ * tool registration.
  */
 import type { KubernetesManager } from "../types.js";
 import type { Config } from "./config.js";

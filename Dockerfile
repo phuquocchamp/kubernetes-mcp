@@ -1,6 +1,6 @@
 FROM node:24.2.0-slim AS base
 WORKDIR /usr/local/app
-COPY package.json .
+COPY package.json package-lock.json .
 
 # Installing kubectl and gcloud with gke-gcloud-auth-plugin for accessing GKE
 RUN apt-get update && apt-get install -y curl
@@ -23,7 +23,7 @@ RUN rm get_helm.sh
 
 # Build the typescript code
 FROM base AS dependencies
-RUN npm install
+RUN npm ci
 COPY tsconfig.json .
 COPY src ./src
 RUN npm run build
@@ -32,7 +32,7 @@ RUN npm run build
 FROM base AS release
 RUN useradd -m appuser && chown -R appuser /usr/local/app
 ENV NODE_ENV=production
-RUN npm install --only=production
+RUN npm ci --omit=dev
 COPY --from=dependencies /usr/local/app/dist ./dist
 USER appuser
 CMD ["node", "dist/index.js"]

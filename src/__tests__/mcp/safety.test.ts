@@ -17,6 +17,7 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
     allowOnlyReadonlyTools: false,
     allowOnlyNonDestructiveTools: false,
     allowedToolNames: null,
+    allowedNamespaces: null,
     maskSecrets: true,
     spawnMaxBufferBytes: 10 * 1024 * 1024,
     dnsRebindingProtection: true,

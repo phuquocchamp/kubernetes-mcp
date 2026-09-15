@@ -3,9 +3,9 @@
  * output contract.
  *
  * Phase 7 of the refactor plan (making tool output compact/counted/with
- * next: hints) is explicitly deferred to its own gated release — see
- * docs/REFACTOR-PATTERN.md. Formatters written in THIS pass keep emitting
- * the same JSON shape existing clients already parse. These helpers exist
+ * next: hints) is explicitly deferred to its own gated release. Formatters
+ * written in THIS pass keep emitting the same JSON shape existing clients
+ * already parse. These helpers exist
  * now so a later phase-7 pass can adopt them one formatter at a time
  * without re-inventing them; do not reach for them to reshape payloads.
  */

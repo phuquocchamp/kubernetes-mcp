@@ -10,6 +10,7 @@
  * from the old path, so the physical move later is a one-file change.
  */
 export {
+  assertNamespaceAllowed,
   assertNoDangerousFlags,
   assertNoRemoteFileReads,
   assertNotFlagLike,

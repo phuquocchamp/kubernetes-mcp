@@ -95,7 +95,12 @@ export function findUnknownToolNames(config: Config): string[] {
 }
 
 function buildDeps(client: KubernetesManager, config: Config): Deps {
-  return { kubectl: runKubectl, helm: runHelm, client, config };
+  return {
+    kubectl: (args, operation, opts) => runKubectl(args, operation, config.allowedNamespaces, opts),
+    helm: (args, operation, opts) => runHelm(args, operation, config.allowedNamespaces, opts),
+    client,
+    config,
+  };
 }
 
 /**

@@ -2,8 +2,7 @@
  * kubectl_create — ported from src/tools/kubectl-create.ts.
  *
  * Preserves the original behavior verbatim, including its two existing
- * quirks (see docs/REFACTOR-PATTERN.md contract: "don't invent new
- * behavior"):
+ * quirks ("don't invent new behavior"):
  *   - the resource-type switch matches case-insensitively
  *     (`resourceType?.toLowerCase()`), but the `-n <namespace>` push below
  *     it compares case-sensitively against `"namespace"` — so

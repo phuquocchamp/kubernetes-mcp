@@ -6,23 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Build and Development
 
-- `bun run build` - Compile TypeScript to dist/ and make executables
-- `bun run dev` - Start TypeScript compiler in watch mode for development
-- `bun run start` - Run the compiled server from dist/index.js
-- `bun run test` - Run the unit test project (no cluster required)
+- `npm run build` - Compile TypeScript to dist/ and make executables
+- `npm run dev` - Start TypeScript compiler in watch mode for development
+- `npm run start` - Run the compiled server from dist/index.js
+- `npm test` - Run the unit test project (no cluster required)
 
 ### Testing and Quality
 
-- `bun run test` - Runs the **unit** Vitest project only: `src/__tests__/**` plus the handful of cluster-free `tests/*.unit.test.ts` files. This is the suite CI and every PR must keep green; it needs no Kubernetes cluster and no kubectl/helm binaries.
-- `bun run test:e2e` - Runs the **e2e** Vitest project: the rest of `tests/*.test.ts`. These require an active Kubernetes cluster connection (custom sequencer runs `kubectl.test.ts` last since it modifies cluster state) and are not expected to pass without one.
-- `bun run test:all` - Runs both projects together (equivalent to the old bare `vitest run`).
+- `npm test` - Runs the **unit** Vitest project only: `src/__tests__/**` plus the handful of cluster-free `tests/*.unit.test.ts` files. This is the suite CI and every PR must keep green; it needs no Kubernetes cluster and no kubectl/helm binaries.
+- `npm run test:e2e` - Runs the **e2e** Vitest project: the rest of `tests/*.test.ts`. These require an active Kubernetes cluster connection (custom sequencer runs `kubectl.test.ts` last since it modifies cluster state) and are not expected to pass without one.
+- `npm run test:all` - Runs both projects together (equivalent to the old bare `vitest run`).
 - Tests have 120s timeout and 60s hook timeout due to Kubernetes operations
 - Use `npx @modelcontextprotocol/inspector node dist/index.js` for local testing with Inspector
 - Always run single test based on with area you are working on. running all tests will take a long time.
 
 ### Local Development Testing
 
-- `bun run chat` - Test locally with mcp-chat CLI client
+- `npx mcp-chat --server "node dist/index.js"` - Test locally with the mcp-chat CLI client
 - For Claude Desktop testing, point to local `dist/index.js` build
 
 ## Architecture Overview
@@ -33,7 +33,7 @@ This is an MCP (Model Context Protocol) server that provides Kubernetes cluster 
 
 **KubernetesManager** (`src/utils/kubernetes-manager.ts`): Central class managing Kubernetes API connections, resource tracking, port forwards, and watches. Handles kubeconfig loading from multiple sources in priority order.
 
-**Tool Structure**: Each Kubernetes operation is split across three layers (the `jenkins-mcp` pattern — see `docs/REFACTOR-PATTERN.md` for the full contract and a worked example):
+**Tool Structure**: Each Kubernetes operation is split across three layers (the `jenkins-mcp` pattern):
 
 - `src/core/operations/*.ts` — pure logic: builds the kubectl/helm argv and parses the result. No MCP or Zod knowledge; takes a `Deps` object (`kubectl`, `helm`, `client`, `config`) so it can be unit-tested with fakes, no live cluster or process spawn.
 - `src/core/format/*.ts` — turns an operation's result into the text the tool returns.
@@ -64,8 +64,6 @@ Tools are divided into: kubectl operations (get, describe, apply, delete, create
 
 ### Adding New Tools
 
-Follow `docs/REFACTOR-PATTERN.md`. In short:
-
 - Add the operation to `src/core/operations/<name>.ts` (pure argv-building + parsing, takes `Deps`) and, if needed, a formatter in `src/core/format/<name>.ts`.
 - Register it with a Zod schema in the relevant `src/tools/*.ts` registrar (or add a new registrar and list it in `REGISTRARS` in `src/server.ts`).
 - Add its name to `ALL_TOOL_NAMES` in `src/server.ts`, and to `READONLY_TOOL_NAMES`/`DESTRUCTIVE_TOOL_NAMES` there if it's read-only or destructive — that's what drives the gating in `isToolAllowed`.
@@ -74,8 +72,8 @@ Follow `docs/REFACTOR-PATTERN.md`. In short:
 
 ### Testing Strategy
 
-- Unit tests (`bun run test`) cover operation logic and schema validation against faked `Deps` — no cluster needed. This is the suite that must stay green.
-- E2E tests (`bun run test:e2e`) verify actual Kubernetes operations against a live cluster; custom test sequencer ensures `kubectl.test.ts` runs last (it modifies cluster state).
+- Unit tests (`npm test`) cover operation logic and schema validation against faked `Deps` — no cluster needed. This is the suite that must stay green.
+- E2E tests (`npm run test:e2e`) verify actual Kubernetes operations against a live cluster; custom test sequencer ensures `kubectl.test.ts` runs last (it modifies cluster state).
 - See `vitest.config.ts` for the unit/e2e project split (by `tests/**/*.unit.test.ts` naming vs. everything else in `tests/`).
 
 ### Configuration Handling
@@ -97,9 +95,11 @@ The server requires:
 
 ## Release Process
 
-Releases are fully automated by the CD workflow (`.github/workflows/cd.yml`), which triggers on any pushed tag matching `v*`. **The only manual step is creating the tag and a matching GitHub release** — the agent that merges a release-worthy PR should do this directly once the PR is merged.
+This is a local-only fork: it is **not** published to npm or Docker Hub. `npx mcp-server-kubernetes` resolves to the original upstream package, not this codebase — consumers must clone and `npm run build` locally, then point their MCP client at the absolute `dist/index.js` path (see README's "Installation & Usage").
 
-**Do NOT bump the version numbers yourself.** CD owns the version bump: on tag push it runs `npm run version:update`, updates the version in every version-bearing file (`package.json`, `src/config/server-config.ts`, `manifest.json`, `CITATION.cff`, `README.md`, `gemini-extension.json`), commits `Bump version to <x.y.z>` to `main`, then builds and publishes to npm and Docker Hub, and uploads the release assets. Editing those files by hand collides with that step and breaks the release. Leave the source at the previous version.
+Releases are handled by the CD workflow (`.github/workflows/cd.yml`), which triggers on any pushed tag matching `v*`. **The only manual step is creating the tag and a matching GitHub release** — the agent that merges a release-worthy PR should do this directly once the PR is merged.
+
+**Do NOT bump the version numbers yourself.** CD owns the version bump: on tag push it runs `npm run version:update`, updates the version in every version-bearing file (`package.json`, `src/config/server-config.ts`), commits `Bump version to <x.y.z>` to `main`, builds, and uploads a source-archive release asset. It does **not** publish anywhere. Editing those files by hand collides with that step and breaks the release. Leave the source at the previous version.
 
 To cut a release, after the PR is merged to `main`:
 
@@ -110,7 +110,7 @@ To cut a release, after the PR is merged to `main`:
 
   Example: `gh release create v4.0.2 --target main --title "Release v4.0.2" --notes "..."` (this creates the `v4.0.2` tag, which triggers CD).
 
-That single tag/release is all that's needed — CD handles the version bump, publish, and asset uploads from there.
+That single tag/release is all that's needed — CD handles the version bump and asset upload from there.
 
 ## Security Fixes and Coordinated Disclosure
 

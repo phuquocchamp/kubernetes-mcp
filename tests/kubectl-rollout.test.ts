@@ -50,8 +50,8 @@ describe("kubectl_rollout command", () => {
   
   beforeEach(async () => {
     transport = new StdioClientTransport({
-      command: "bun",
-      args: ["src/index.ts"],
+      command: "node",
+      args: ["dist/index.js"],
       stderr: "pipe",
     });
 
@@ -403,8 +403,8 @@ describe("kubectl_rollout command error handling", () => {
   
   beforeEach(async () => {
     transport = new StdioClientTransport({
-      command: "bun",
-      args: ["src/index.ts"],
+      command: "node",
+      args: ["dist/index.js"],
       stderr: "pipe",
     });
 

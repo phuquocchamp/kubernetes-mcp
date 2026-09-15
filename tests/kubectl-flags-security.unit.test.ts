@@ -1,6 +1,7 @@
 import { expect, test, describe, beforeEach, afterEach, vi } from "vitest";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import {
+  assertNamespaceAllowed,
   assertNoDangerousFlags,
   assertNotFlagLike,
   assertSafeArgv,
@@ -624,5 +625,98 @@ describe("sibling tools refuse the positional flag-injection PoC", () => {
       expect(e).toBeInstanceOf(McpError);
       expect((e as McpError).code).toBe(ErrorCode.InvalidParams);
     }
+  });
+});
+
+describe("assertNamespaceAllowed", () => {
+  test("no-op when allowedNamespaces is null", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-n", "prod"], null)).not.toThrow();
+  });
+
+  test("no-op when allowedNamespaces is empty", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-n", "prod"], [])).not.toThrow();
+  });
+
+  test("no-op for a command with no namespace flag at all (cluster-scoped)", () => {
+    expect(() => assertNamespaceAllowed(["get", "nodes"], ["staging"])).not.toThrow();
+  });
+
+  test("allows a namespace in the allowlist, split form (-n value)", () => {
+    expect(() =>
+      assertNamespaceAllowed(["get", "pods", "-n", "staging"], ["staging", "default"])
+    ).not.toThrow();
+  });
+
+  test("allows a namespace in the allowlist, long split form (--namespace value)", () => {
+    expect(() =>
+      assertNamespaceAllowed(["install", "rel", "chart", "--namespace", "staging"], ["staging"])
+    ).not.toThrow();
+  });
+
+  test("allows a namespace in the allowlist, long attached form (--namespace=value)", () => {
+    expect(() =>
+      assertNamespaceAllowed(["install", "rel", "chart", "--namespace=staging"], ["staging"])
+    ).not.toThrow();
+  });
+
+  test("allows a namespace in the allowlist, short attached form (-nstaging)", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-nstaging"], ["staging"])).not.toThrow();
+  });
+
+  test("allows a namespace in the allowlist, short attached-with-equals form (-n=staging)", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-n=staging"], ["staging"])).not.toThrow();
+  });
+
+  test("rejects a namespace outside the allowlist, split form", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-n", "prod"], ["staging"])).toThrow(
+      /prod/
+    );
+  });
+
+  test("rejects a namespace outside the allowlist, long form", () => {
+    expect(() =>
+      assertNamespaceAllowed(["get", "pods", "--namespace", "prod"], ["staging"])
+    ).toThrow(/prod/);
+  });
+
+  test("rejects a namespace outside the allowlist, long attached form", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "--namespace=prod"], ["staging"])).toThrow(
+      /prod/
+    );
+  });
+
+  test("rejects a namespace outside the allowlist, short attached form", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-nprod"], ["staging"])).toThrow(/prod/);
+  });
+
+  test("rejects --all-namespaces long form", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "--all-namespaces"], ["staging"])).toThrow(
+      /all-namespaces/
+    );
+  });
+
+  test("rejects -A short form", () => {
+    expect(() => assertNamespaceAllowed(["get", "pods", "-A"], ["staging"])).toThrow(
+      /all-namespaces/
+    );
+  });
+
+  test("namespace rejection is an McpError with InvalidParams code", () => {
+    try {
+      assertNamespaceAllowed(["get", "pods", "-n", "prod"], ["staging"]);
+      throw new Error("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(McpError);
+      expect((e as McpError).code).toBe(ErrorCode.InvalidParams);
+    }
+  });
+
+  test("get() builds the -n argv the guard scans, so ALLOWED_NAMESPACES sees the right value", async () => {
+    const deps = fakeDeps();
+    await get(deps, { resourceType: "pods", namespace: "prod" });
+    expect(deps.kubectl).toHaveBeenCalledWith(
+      expect.arrayContaining(["-n", "prod"]),
+      expect.any(String)
+    );
   });
 });

@@ -23,8 +23,8 @@ describe("tool restriction enforcement (tools/call layer)", () => {
 
   async function connectWithEnv(env: Record<string, string>): Promise<Client> {
     transport = new StdioClientTransport({
-      command: "bun",
-      args: ["src/index.ts"],
+      command: "node",
+      args: ["dist/index.js"],
       env: {
         ...process.env,
         ...env,

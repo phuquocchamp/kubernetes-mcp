@@ -45,8 +45,8 @@ describe("kubernetes cronjob operations with kubectl commands", () => {
     try {
       // Create transport and client
       transport = new StdioClientTransport({
-        command: "bun",
-        args: ["src/index.ts"],
+        command: "node",
+        args: ["dist/index.js"],
         stderr: "pipe",
       });
 

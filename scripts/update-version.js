@@ -29,39 +29,6 @@ const files = [
   {
     path: 'src/config/server-config.ts',
     update: (content) => content.replace(/version:\s*"[^"]+"/, `version: "${version}"`)
-  },
-  {
-    path: 'manifest.json',
-    update: (content) => {
-      const manifest = JSON.parse(content);
-      manifest.version = version;
-      return JSON.stringify(manifest, null, 2) + '\n';
-    }
-  },
-  {
-    path: 'CITATION.cff',
-    update: (content) => content.replace(/^version: .*/m, `version: ${version}`)
-  },
-  {
-    path: 'README.md',
-    update: (content) => content.replace(/version = \{\{\{VERSION\}\}\}/g, `version = {${version}}`)
-  },
-  {
-    path: 'gemini-extension.json',
-    update: (content) => {
-      const ext = JSON.parse(content);
-      ext.version = version;
-      return JSON.stringify(ext, null, 2) + '\n';
-    }
-  },
-  {
-    path: 'server.json',
-    update: (content) => {
-      const server = JSON.parse(content);
-      server.version = version;
-      server.packages[0].version = version;
-      return JSON.stringify(server, null, 2) + '\n';
-    }
   }
 ];
 

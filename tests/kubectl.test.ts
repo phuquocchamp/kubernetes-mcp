@@ -39,8 +39,8 @@ describe("kubectl operations", () => {
   beforeEach(async () => {
     try {
       transport = new StdioClientTransport({
-        command: "bun",
-        args: ["src/index.ts"],
+        command: "node",
+        args: ["dist/index.js"],
         stderr: "pipe",
       });
 

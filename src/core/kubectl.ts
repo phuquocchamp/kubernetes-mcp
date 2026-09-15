@@ -14,7 +14,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isRemoteTransport } from "../security/transport.js";
 import { normalizeError } from "./errors.js";
-import { assertNoRemoteFileReads, assertSafeArgv } from "./security/argv.js";
+import { assertNamespaceAllowed, assertNoRemoteFileReads, assertSafeArgv } from "./security/argv.js";
 import { withCommandSpan } from "./telemetry.js";
 import type { RunOpts } from "./types.js";
 
@@ -27,9 +27,11 @@ async function run(
   command: string,
   args: string[],
   operation: string,
+  allowedNamespaces: readonly string[] | null,
   opts: RunOpts = {},
 ): Promise<string> {
   assertSafeArgv(args);
+  assertNamespaceAllowed(args, allowedNamespaces);
   if (isRemoteTransport()) assertNoRemoteFileReads(args);
 
   return withCommandSpan(command, args, operation, async () => {
@@ -48,11 +50,21 @@ async function run(
 }
 
 /** Runs kubectl. `operation` is a short label (e.g. "kubectl_get") used only in error messages. */
-export function runKubectl(args: string[], operation: string, opts?: RunOpts): Promise<string> {
-  return run("kubectl", args, operation, opts);
+export function runKubectl(
+  args: string[],
+  operation: string,
+  allowedNamespaces: readonly string[] | null,
+  opts?: RunOpts,
+): Promise<string> {
+  return run("kubectl", args, operation, allowedNamespaces, opts);
 }
 
 /** Runs helm, same contract as runKubectl. */
-export function runHelm(args: string[], operation: string, opts?: RunOpts): Promise<string> {
-  return run("helm", args, operation, opts);
+export function runHelm(
+  args: string[],
+  operation: string,
+  allowedNamespaces: readonly string[] | null,
+  opts?: RunOpts,
+): Promise<string> {
+  return run("helm", args, operation, allowedNamespaces, opts);
 }

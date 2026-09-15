@@ -143,8 +143,8 @@ describe("test kubernetes service", () => {
     try {
       // Initialize client transport layer, communicating with the service process via stdio
       transport = new StdioClientTransport({
-        command: "bun",
-        args: ["src/index.ts"],
+        command: "node",
+        args: ["dist/index.js"],
         stderr: "pipe",
       });
 

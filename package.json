@@ -4,10 +4,9 @@
   "description": "MCP server for interacting with Kubernetes clusters via kubectl",
   "license": "MIT",
   "type": "module",
-  "author": "Flux159",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Flux159/mcp-server-kubernetes"
+    "url": "https://github.com/phuquocchamp/kubernetes-mcp"
   },
   "bin": {
     "mcp-server-kubernetes": "dist/index.js"
@@ -17,17 +16,13 @@
   ],
   "scripts": {
     "build": "tsc && shx chmod +x dist/*.js",
-    "buildmcpb": "node_modules/.bin/mcpb pack",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest run --project unit",
-    "test:e2e": "vitest run --project e2e",
+    "test:e2e": "npm run build && vitest run --project e2e",
     "test:all": "vitest run",
     "lint": "biome check src",
     "format": "biome format --write src",
-    "prepublishOnly": "npm run build",
-    "dockerbuild": "docker buildx build -t flux159/mcp-server-kubernetes --platform linux/amd64,linux/arm64 --push .",
-    "chat": "npx mcp-chat --server \"./dist/index.js\"",
     "version:update": "node scripts/update-version.js"
   },
   "keywords": [
@@ -55,7 +50,6 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@anthropic-ai/mcpb": "1.1.0",
     "@biomejs/biome": "^2.5.3",
     "@types/express": "5.0.1",
     "@types/js-yaml": "4.0.9",

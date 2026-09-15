@@ -23,6 +23,14 @@ export const ConfigSchema = z.object({
   allowOnlyNonDestructiveTools: z.boolean(),
   /** Exact allowlist of tool names, or null for "no restriction". Unknown names fail startup (see loadConfig). */
   allowedToolNames: z.array(z.string()).nullable(),
+  /**
+   * Exact allowlist of namespace names, or null for "no restriction".
+   * Enforced by assertNamespaceAllowed() in core/kubectl.ts against every
+   * kubectl/helm argv (-n/--namespace value, and --all-namespaces/-A is
+   * refused outright) — defense-in-depth on top of kubeconfig RBAC, not a
+   * replacement for it.
+   */
+  allowedNamespaces: z.array(z.string()).nullable(),
   maskSecrets: z.boolean(),
   spawnMaxBufferBytes: z.number().int().positive(),
   httpAuthToken: z.string().optional(),
@@ -47,6 +55,7 @@ export function validateConfig(
   env: NodeJS.ProcessEnv | Record<string, string | undefined>,
 ): ValidateConfigResult {
   const allowedToolsRaw = env.ALLOWED_TOOLS;
+  const allowedNamespacesRaw = env.ALLOWED_NAMESPACES;
   const parsedPort = Number.parseInt(env.PORT ?? "3000", 10);
   const parsedMaxBuffer = env.SPAWN_MAX_BUFFER
     ? Number.parseInt(env.SPAWN_MAX_BUFFER, 10)
@@ -59,6 +68,12 @@ export function validateConfig(
       ? allowedToolsRaw
           .split(",")
           .map((t) => t.trim())
+          .filter(Boolean)
+      : null,
+    allowedNamespaces: allowedNamespacesRaw
+      ? allowedNamespacesRaw
+          .split(",")
+          .map((n) => n.trim())
           .filter(Boolean)
       : null,
     maskSecrets: boolEnv(env.MASK_SECRETS, true),

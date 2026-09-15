@@ -760,7 +760,7 @@ Structured logging integration:
 ## Support
 
 ### Resources
-- **Issue Tracker**: https://github.com/Flux159/mcp-server-kubernetes/issues
+- **Issue Tracker**: https://github.com/phuquocchamp/kubernetes-mcp/issues
 - **OpenTelemetry Docs**: https://opentelemetry.io/docs/
 - **Jaeger Docs**: https://www.jaegertracing.io/docs/
 

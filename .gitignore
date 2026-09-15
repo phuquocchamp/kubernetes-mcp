@@ -54,7 +54,10 @@ web_modules/
 .npm
 
 # Lock files
-package-lock.json
+bun.lockb
+
+# Test reports
+junit-results.xml
 
 # Optional eslint cache
 .eslintcache

@@ -1,6 +1,6 @@
 /**
  * MCP adapter for the destructive tool group: kubectl_delete, kubectl_generic,
- * cleanup. See docs/REFACTOR-PATTERN.md for the layering contract.
+ * cleanup.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";

@@ -1,7 +1,7 @@
 /**
  * Operation: node_management
  * Cordon, drain and uncordon Kubernetes nodes. Ported from
- * src/tools/node-management.ts — see docs/REFACTOR-PATTERN.md.
+ * src/tools/node-management.ts.
  */
 import { getSpawnMaxBuffer } from "../../config/max-buffer.js";
 import { KubectlError } from "../errors.js";
